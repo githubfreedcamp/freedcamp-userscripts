@@ -22,10 +22,11 @@
         title: 'Select mode',
         menuCommand: true,
         params: {
-            mode: {
+            highlight: {
                 type: 'select',
-                choices: [ 'Highlight favorite projects by their color', 'Highlight favorite projects by custom color', 'Use text in a project name to highlight project cards' ],
-                'default': 'Highlight favorite projects by their color',
+                choices: [ 'Favorite projects with a project color', 'Favorite projects by a set color',
+                          'All projects with a project color', 'Projects matching the text in a project name' ],
+                'default': 'Favorite projects with a project color',
                 variant: 'radio column'
             }
         },
@@ -33,6 +34,9 @@
             location.reload();
         }
     });
+
+    const MODE = modeSelect.get('highlight');
+
 
     var colorOpacity = new MonkeyConfig({
         title: 'Color opacity',
@@ -55,101 +59,96 @@
         }
     });
 
-    if (modeSelect.get('mode') === 'Highlight favorite projects by custom color') {
-        var secondMode = new MonkeyConfig({
-            title: 'Config',
-            menuCommand: true,
-            params: {
-                custom_color: {
-                    type: 'custom',
-                    html: '<input type="color" style="width: 10em;"/>',
-                    set: function (value, parent) {
-                        parent.querySelectorAll('input')[0].value = value;
-                    },
-                    get: function (parent) {
-                        let value = parent.querySelectorAll('input')[0].value;
-                        if (!value.match(HEX_REGEX)) {
-                            alert('Wrong HEX color! Restored default.');
-                            return '#00FF00';
-                        } else {
-                            return value.replace(HEX_REGEX, "$2")
-                        }
-                    },
-                    default: '#00ff00'
-                }
-            },
-            onSave: function (values) {
-                location.reload();
-            }
-        });
-    } else if (modeSelect.get('mode') === 'Use text in a project name to highlight project cards') {
-        var thirdMode = new MonkeyConfig({
-            title: 'Config',
-            menuCommand: true,
-            params: {
-                keywords: {
-                    type: 'custom',
-                    html: '<input type="text" placeholder="keyword" style="width: 10em;" />  ' +
-                    '<input type="color" placeholder="HEX color" style="width: 10em;" /></br>' +
-                    '<input type="text" style="width: 10em;" />  ' +
-                    '<input type="color" style="width: 10em;" /></br>' +
-                    '<input type="text" style="width: 10em;" />  ' +
-                    '<input type="color" style="width: 10em;" /></br>' +
-                    '<input type="text" style="width: 10em;" />  ' +
-                    '<input type="color" style="width: 10em;" /></br>' +
-                    '<input type="text" style="width: 10em;" />  ' +
-                    '<input type="color" style="width: 10em;" /></br>' +
-                    '<input type="text" style="width: 10em;" />  ' +
-                    '<input type="color" style="width: 10em;" /></br>' +
-                    '<input type="text" style="width: 10em;" />  ' +
-                    '<input type="color" style="width: 10em;" /></br>' +
-                    '<input type="text" style="width: 10em;" />  ' +
-                    '<input type="color" style="width: 10em;" /></br>' +
-                    '<input type="text" style="width: 10em;" />  ' +
-                    '<input type="color" style="width: 10em;" /></br>' +
-                    '<input type="text" style="width: 10em;" />  ' +
-                    '<input type="color" style="width: 10em;" />',
-                    set: function (value, parent) {
-                        let i = 0;
-
-                        for (let key in value) {
-                            parent.querySelectorAll('input')[i].value = key;
-                            parent.querySelectorAll('input')[i + 1].value = value[key];
-
-                            i += 2;
-                        }
-                        for ( ; i < parent.querySelectorAll('input').length; i++) {
-                            parent.querySelectorAll('input')[i].value = "";
-                        }
-                    },
-                    get: function (parent) {
-                        let result = {};
-
-                        let inputs = parent.querySelectorAll('input');
-
-                        for (let i = 0; i < inputs.length; i += 2 ) {
-                            const key = inputs[i].value;
-                            const val = inputs[i + 1].value.toLowerCase();
-
-                            if (key.length > 3 && val.match(HEX_REGEX)) {
-                                result[key] = val.replace(HEX_REGEX, "$2");
-                            }
-                        }
-
-                        return result;
-                    },
-                    default: {"test" : "#00ff00"}
-                }
-            },
-            onSave: function (values) {
-                location.reload();
-            }
-        });
-    }
-
-    const MODE = modeSelect.get('mode');
-
     const OPACITY = colorOpacity.get('opacity') / 100;
+
+    switch(MODE) {
+        case('Favorite projects by a set color') : {
+            var secondMode = new MonkeyConfig({
+                title: 'Set color',
+                menuCommand: true,
+                params: {
+                    custom_color: {
+                        type: 'custom',
+                        html: '<input type="color" style="width: 5em;"/>',
+                        set: function (value, parent) {
+                            parent.querySelectorAll('input')[0].value = value;
+                        },
+                        get: function (parent) {
+                            let value = parent.querySelectorAll('input')[0].value;
+                            if (!value.match(HEX_REGEX)) {
+                                alert('Wrong HEX color! Restored default.');
+                                return '#00FF00';
+                            } else {
+                                return value.replace(HEX_REGEX, "$2")
+                            }
+                        },
+                        default: '#00ff00'
+                    }
+                },
+                onSave: function (values) {
+                    location.reload();
+                }
+            });
+            break;
+        }
+        case('Projects matching the text in a project name') : {
+            function generateFields(count) {
+                let html = '<input type="text" placeholder="keyword" style="width: 10em;" />  ' +
+                    '<input type="color" placeholder="HEX color" style="width: 5em;" /></br>';
+
+                for (let i = 0; i < count - 1; i++) {
+                    html += '<input type="text" style="width: 10em;" />  ' +
+                        '<input type="color" style="width: 5em;" /></br>'
+                }
+                return html;
+            }
+
+            var thirdMode = new MonkeyConfig({
+                title: 'Set keywords',
+                menuCommand: true,
+                params: {
+                    keywords: {
+                        type: 'custom',
+                        html: generateFields(10),
+                        set: function (value, parent) {
+                            let i = 0;
+
+                            for (let key in value) {
+                                parent.querySelectorAll('input')[i].value = key;
+                                parent.querySelectorAll('input')[i + 1].value = value[key];
+
+                                i += 2;
+                            }
+                            for ( ; i < parent.querySelectorAll('input').length; i++) {
+                                parent.querySelectorAll('input')[i].value = "";
+                            }
+                        },
+                        get: function (parent) {
+                            let result = {};
+
+                            let inputs = parent.querySelectorAll('input');
+
+                            for (let i = 0; i < inputs.length; i += 2 ) {
+                                const key = inputs[i].value;
+                                const val = inputs[i + 1].value.toLowerCase();
+
+                                if (key.length > 3 && val.match(HEX_REGEX)) {
+                                    result[key] = val.replace(HEX_REGEX, "$2");
+                                }
+                            }
+
+                            return result;
+                        },
+                        default: {"keyword1" : "#00ff00"}
+                    }
+                },
+                onSave: function (values) {
+                    location.reload();
+                }
+            });
+            break;
+        }
+    }
 
     // on dashboard page
     if (window.location.href === 'https://freedcamp.com/dashboard') {
@@ -158,13 +157,18 @@
         for (let i = 0; i < projects.length; i++) {
             const pBlock = projects[i];
 
-            if (pBlock.querySelectorAll('.favorited')[0]) {
-                switchFavorited(pBlock);
-            }
+            if (MODE === 'All projects with a project color'
+                || MODE ==='Projects matching the text in a project name') {
+                switchBlockColor(pBlock);
+            } else {
+                if (pBlock.querySelectorAll('.favorited')[0]) {
+                    switchBlockColor(pBlock);
+                }
 
-            pBlock.querySelectorAll('.favorite_project_action')[0].onclick = function() {
-                switchFavorited(pBlock);
-            };
+                pBlock.querySelectorAll('.favorite_project_action')[0].onclick = function() {
+                    switchBlockColor(pBlock);
+                };
+            }
         }
     }
 
@@ -178,9 +182,9 @@
             for (let z = 0; z < sideProjects.length; z++) {
                 let sideProject = sideProjects[z];
 
-                if (MODE === 'Highlight favorite projects by their color') {
+                if (MODE === 'All projects with a project color') {
                     color = sideProject.querySelectorAll('.color')[0].style.backgroundColor;
-                } else if (MODE === 'Use text in a project name to highlight project cards') {
+                } else if (MODE === 'Projects matching the text in a project name') {
                     let keywords = thirdMode.get('keywords');
                     let name = sideProject.querySelectorAll('.name')[0].textContent.toLowerCase();
 
@@ -202,10 +206,10 @@
 
                     let fcApps = document.querySelectorAll('.fc_app');
 
-                    switchColor(name, colorIsLight);
+                    inverseColor(name, colorIsLight);
 
                     if (desc) {
-                        switchColor(desc, colorIsLight);
+                        inverseColor(desc, colorIsLight);
                     }
 
                     // make buttons dark
@@ -229,12 +233,13 @@
         }
     };
 
-    function switchFavorited(pBlock) {
+    function switchBlockColor(pBlock) {
         let color, colorIsLight, opColor;
 
-        if (MODE === 'Highlight favorite projects by their color') {
+        if (MODE === 'Favorite projects with a project color'
+            || MODE === 'All projects with a project color') {
             color = pBlock.querySelectorAll('.card_color')[0].style.backgroundColor;
-        } else if (MODE === 'Highlight favorite projects by custom color') {
+        } else if (MODE === 'Favorite projects by a set color') {
             color = hexToRgb(secondMode.get('custom_color'));
         } else {
             let keywords = thirdMode.get('keywords');
@@ -251,7 +256,6 @@
         if (color) {
             colorIsLight = isLight(color);
             opColor = `${color.substring(0, color.length - 1)}, ${OPACITY})`;
-            const cogImage = pBlock.querySelectorAll('.cog_image')[0];
 
             let desc = pBlock.querySelectorAll('.project_desc')[0];
             let noDesc = pBlock.querySelectorAll('.no_description')[0];
@@ -264,18 +268,12 @@
                 pBlock.style.background = opColor;
             }
 
-            if (cogImage.style.color) {
-                cogImage.style.color = '';
-            } else {
-                cogImage.style.color = 'black';
-            }
-
-            switchColor(name, colorIsLight);
+            inverseColor(name, colorIsLight);
 
             if (noDesc) {
-                switchColor(noDesc, colorIsLight);
+                inverseColor(noDesc, colorIsLight);
             } else {
-                switchColor(desc, colorIsLight);
+                inverseColor(desc, colorIsLight);
             }
         }
     }
@@ -298,7 +296,7 @@
         return hsp > 127.5;
     }
 
-    function switchColor(element, light) {
+    function inverseColor(element, light) {
         if (element.style.color) {
             element.style.color = '';
         } else {
