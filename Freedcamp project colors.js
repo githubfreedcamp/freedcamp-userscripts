@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp project colors
 // @namespace    http://freedcamp.com/
-// @version      0.1
+// @version      0.2
 // @description  enable project cards background color
 // @author       s010vey
 // @match        https://freedcamp.com/*
