@@ -3,7 +3,7 @@
 // @namespace    http://freedcamp.com/
 // @version      0.2
 // @description  enable project cards background color
-// @author       s010vey
+// @author       devops@freedcamp.com
 // @match        https://freedcamp.com/*
 // @require      https://raw.github.com/odyniec/MonkeyConfig/master/monkeyconfig.js
 // @grant        GM_getValue
