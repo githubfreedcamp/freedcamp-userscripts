@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp project colors
 // @namespace    http://freedcamp.com/
-// @version      0.2
+// @version      0.3
 // @description  enable project cards background color
 // @author       devops@freedcamp.com
 // @match        https://freedcamp.com/*
