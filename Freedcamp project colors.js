@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp project colors
 // @namespace    http://freedcamp.com/
-// @version      0.4
+// @version      0.5
 // @description  enable project cards background color
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
@@ -228,7 +228,7 @@
             let name = sideProject.querySelectorAll('.name')[0];
             let desc = sideProject.querySelectorAll('.fc_description')[0];
 
-            let fcApps = document.querySelectorAll('.fc_app');
+            let fcApps = sideProject.querySelectorAll('.fc_app');
 
             inverseColor(name, colorIsLight);
 
