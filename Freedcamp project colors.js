@@ -1,10 +1,11 @@
 // ==UserScript==
 // @name         Freedcamp project colors
 // @namespace    http://freedcamp.com/
-// @version      0.3
+// @version      0.4
 // @description  enable project cards background color
 // @author       devops@freedcamp.com
-// @match        https://freedcamp.com/*
+// @match        *://freedcamp.com/*
+// @match        *://*.freedcamp.com/*
 // @require      https://raw.github.com/odyniec/MonkeyConfig/master/monkeyconfig.js
 // @grant        GM_getValue
 // @grant        GM_setValue
@@ -151,22 +152,22 @@
     }
 
     // on dashboard page
-    if (window.location.href === 'https://freedcamp.com/dashboard') {
+    if (window.location.href.match(/.+(\/dashboard)$/)) {
         let projects = document.querySelectorAll('.project');
 
-        for (let i = 0; i < projects.length; i++) {
-            const pBlock = projects[i];
-
-            if (MODE === 'All projects with a project color'
+        if (MODE === 'All projects with a project color'
                 || MODE ==='Projects matching the text in a project name') {
-                switchBlockColor(pBlock);
-            } else {
-                if (pBlock.querySelectorAll('.favorited')[0]) {
-                    switchBlockColor(pBlock);
+            for (let i = 0; i < projects.length; i++) {
+                switchDashboardColor(projects[i]);
+            }
+        } else {
+            for (let i = 0; i < projects.length; i++) {
+                if (projects[i].querySelectorAll('.favorited')[0]) {
+                    switchDashboardColor(projects[i]);
                 }
 
-                pBlock.querySelectorAll('.favorite_project_action')[0].onclick = function() {
-                    switchBlockColor(pBlock);
+                projects[i].querySelectorAll('.favorite_project_action')[0].onclick = function() {
+                    switchDashboardColor(projects[i]);
                 };
             }
         }
@@ -175,65 +176,82 @@
     // sidebar
     let switcherNotOpened = true;
     document.querySelectorAll('.fc_project_switcher')[0].onclick = function() {
-        if (switcherNotOpened) {
-            let color;
-            let sideProjects = document.querySelectorAll('.fc_project_item');
+        if (switcherNotOpened) { // check if switcher is opened to prevent color re-setting
+            if (MODE === 'All projects with a project color'
+                || MODE ==='Projects matching the text in a project name') {
+                let sideProjects = document.querySelectorAll('.fc_project_item');
 
-            for (let z = 0; z < sideProjects.length; z++) {
-                let sideProject = sideProjects[z];
+                for (let z = 0; z < sideProjects.length; z++) {
+                    let sideProject = sideProjects[z];
 
-                if (MODE === 'All projects with a project color') {
-                    color = sideProject.querySelectorAll('.color')[0].style.backgroundColor;
-                } else if (MODE === 'Projects matching the text in a project name') {
-                    let keywords = thirdMode.get('keywords');
-                    let name = sideProject.querySelectorAll('.name')[0].textContent.toLowerCase();
-
-                    for (let key in keywords) {
-                        let value = keywords[key];
-
-                        if (name.indexOf(key.toLowerCase()) != -1) {
-                            color = hexToRgb(value);
-                            break;
-                        }
-                    }
+                    switchSidebarColor(sideProject)
                 }
+            } else {
+                let sideProjects = document.querySelectorAll('.f_favorite');
 
-                if (color) {
-                    let colorIsLight = isLight(color);
+                for (let z = 0; z < sideProjects.length; z++) {
+                    let sideProject = sideProjects[z].querySelectorAll('.fc_project_item')[0];
 
-                    let name = sideProject.querySelectorAll('.name')[0];
-                    let desc = sideProject.querySelectorAll('.fc_description')[0];
-
-                    let fcApps = document.querySelectorAll('.fc_app');
-
-                    inverseColor(name, colorIsLight);
-
-                    if (desc) {
-                        inverseColor(desc, colorIsLight);
-                    }
-
-                    // make buttons dark
-                    for (let x = 0; x < fcApps.length; x++) {
-                        let btns = fcApps[x].querySelectorAll('.btn');
-
-                        for (let y = 0; y < btns.length; y++) {
-                            btns[y].style.color = 'black';
-                        }
-                    }
-
-                    sideProject.style.backgroundColor = `${color.substring(0, color.length - 1)}, ${OPACITY})`;
-
-                    sideProject.style.borderColor = color;
+                    switchSidebarColor(sideProject)
                 }
-
-                color = null;
             }
-
-            switcherNotOpened = false;
         }
+
+        switcherNotOpened = false;
     };
 
-    function switchBlockColor(pBlock) {
+    function switchSidebarColor(sideProject) {
+        let color;
+
+        if (MODE === 'All projects with a project color'
+            || MODE === 'Favorite projects with a project color') {
+            color = sideProject.querySelectorAll('.color')[0].style.backgroundColor;
+        } else if (MODE === 'Favorite projects by a set color') {
+            color = hexToRgb(secondMode.get('custom_color'));
+        } else {
+            let keywords = thirdMode.get('keywords');
+            let name = sideProject.querySelectorAll('.name')[0].textContent.toLowerCase();
+
+            for (let key in keywords) {
+                let value = keywords[key];
+
+                if (name.indexOf(key.toLowerCase()) != -1) {
+                    color = hexToRgb(value);
+                    break;
+                }
+            }
+        }
+
+        if (color) {
+            let colorIsLight = isLight(color);
+
+            let name = sideProject.querySelectorAll('.name')[0];
+            let desc = sideProject.querySelectorAll('.fc_description')[0];
+
+            let fcApps = document.querySelectorAll('.fc_app');
+
+            inverseColor(name, colorIsLight);
+
+            if (desc) {
+                inverseColor(desc, colorIsLight);
+            }
+
+            // make buttons dark
+            for (let x = 0; x < fcApps.length; x++) {
+                let btns = fcApps[x].querySelectorAll('.btn');
+
+                for (let y = 0; y < btns.length; y++) {
+                    btns[y].style.color = 'black';
+                }
+            }
+
+            sideProject.style.backgroundColor = `${color.substring(0, color.length - 1)}, ${OPACITY})`;
+
+            sideProject.style.borderColor = color;
+        }
+    }
+
+    function switchDashboardColor(pBlock) {
         let color, colorIsLight, opColor;
 
         if (MODE === 'Favorite projects with a project color'
@@ -263,7 +281,7 @@
             let name = pBlock.querySelectorAll('.project_name')[0];
 
             if (pBlock.style.background) {
-                pBlock.style.background = '';
+                pBlock.removeAttribute('style');
             } else {
                 pBlock.style.background = opColor;
             }
@@ -298,7 +316,7 @@
 
     function inverseColor(element, light) {
         if (element.style.color) {
-            element.style.color = '';
+            element.removeAttribute('style');
         } else {
             element.style.color = light ? 'black' : 'white';
         }
