@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp project colors
 // @namespace    http://freedcamp.com/
-// @version      0.4
+// @version      0.5
 // @description  enable project cards background color
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
@@ -176,9 +176,9 @@
     // sidebar
     let switcherNotOpened = true;
     document.querySelectorAll('.fc_project_switcher')[0].onclick = function() {
-        if (switcherNotOpened) { // check if switcher is opened to prevent color re-setting
-            if (MODE === 'All projects with a project color'
-                || MODE ==='Projects matching the text in a project name') {
+        if (MODE === 'All projects with a project color'
+            || MODE ==='Projects matching the text in a project name') {
+            if (switcherNotOpened) { // check if switcher is opened to prevent color re-setting
                 let sideProjects = document.querySelectorAll('.fc_project_item');
 
                 for (let z = 0; z < sideProjects.length; z++) {
@@ -186,19 +186,51 @@
 
                     switchSidebarColor(sideProject)
                 }
-            } else {
-                let sideProjects = document.querySelectorAll('.f_favorite');
+            }
+        } else {
+            resetSidebarStyle(); // reset sidebar style to update colors if "f_favorite" is added
 
-                for (let z = 0; z < sideProjects.length; z++) {
-                    let sideProject = sideProjects[z].querySelectorAll('.fc_project_item')[0];
+            let sideProjects = document.querySelectorAll('.f_favorite');
 
-                    switchSidebarColor(sideProject)
-                }
+            for (let z = 0; z < sideProjects.length; z++) {
+                let sideProject = sideProjects[z].querySelectorAll('.fc_project_item')[0];
+
+                switchSidebarColor(sideProject)
             }
         }
 
         switcherNotOpened = false;
     };
+
+    function resetSidebarStyle() {
+        let sideProjects = document.querySelectorAll('.fc_project_item');
+
+        for (let i = 0; i < sideProjects.length; i++) {
+            let sideProject = sideProjects[i];
+
+            sideProject.removeAttribute('style');
+
+            let names = sideProject.querySelectorAll('.name');
+            let descs = sideProject.querySelectorAll('.fc_description');
+            let fcApps = sideProject.querySelectorAll('.fc_app');
+
+            for (let y = 0; y < names.length; y++) {
+                names[y].removeAttribute('style');
+            }
+
+            for (let z = 0; z < descs.length; z++) {
+                descs[z].removeAttribute('style');
+            }
+
+            for (let x = 0; x < fcApps.length; x++) {
+                let btns = fcApps[x].querySelectorAll('.btn');
+
+                for (let y = 0; y < btns.length; y++) {
+                    btns[y].removeAttribute('style');
+                }
+            }
+        }
+    }
 
     function switchSidebarColor(sideProject) {
         let color;
