@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp project colors
 // @namespace    http://freedcamp.com/
-// @version      0.6
+// @version      0.7
 // @description  enable project cards background color
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
@@ -309,6 +309,7 @@
 
             let desc = pBlock.querySelectorAll('.project_desc')[0];
             let noDesc = pBlock.querySelectorAll('.no_description')[0];
+            const cogImage = pBlock.querySelectorAll('.cog_image')[0];
 
             let name = pBlock.querySelectorAll('.project_name')[0];
 
@@ -324,6 +325,12 @@
                 inverseColor(noDesc, colorIsLight);
             } else {
                 inverseColor(desc, colorIsLight);
+            }
+
+            if (cogImage.style.color) {
+                cogImage.removeAttribute('style');
+            } else {
+                cogImage.style.color = 'black';
             }
         }
     }
