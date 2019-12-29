@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp project colors
 // @namespace    http://freedcamp.com/
-// @version      0.6
+// @version      0.7
 // @description  enable project cards background color
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
@@ -133,7 +133,7 @@
                                 const key = inputs[i].value;
                                 const val = inputs[i + 1].value.toLowerCase();
 
-                                if (key.length > 3 && val.match(HEX_REGEX)) {
+                                if (key.length > 2 && val.match(HEX_REGEX)) {
                                     result[key] = val.replace(HEX_REGEX, "$2");
                                 }
                             }
