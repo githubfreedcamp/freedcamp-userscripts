@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp project colors
 // @namespace    http://freedcamp.com/
-// @version      0.8
+// @version      0.9
 // @description  enable project cards background color
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
@@ -16,24 +16,49 @@
 (function () {
     "use strict";
 
-    const MTPN = "Matching the text in a project name";
-    const MTPD = "Matching the text in a project description";
-    const MTPND = "Matching the text in a project name and description";
-    const FPPC = "Favorite projects with a project color";
-    const FPSC = "Favorite projects by a set color";
-    const APPC = "All projects with a project color";
-
-    let matchTextConfig, favProjSetColorConfig;
+    let mtConfig, fpscConfig;
 
     const modeSelectConfig = new MonkeyConfig({
         title: "Select mode",
         menuCommand: true,
         params: {
             highlight: {
-                type: "select",
-                choices: [FPPC, FPSC, APPC, MTPN, MTPD, MTPND],
-                default: FPPC,
-                variant: "radio column"
+                type: "custom",
+                html:
+                    "<form>" +
+                    "<input type='radio' name='mode' id='fppc'/>" +
+                    "<label for='fppc'> Favorite projects with a project color</label><br>" +
+                    "<input type='radio' name='mode' id='fpsc'/>" +
+                    "<label for='fpsc'> Favorite projects by a set color</label><br>" +
+                    "<input type='radio' name='mode' id='appc'/>" +
+                    "<label for='appc'> All projects with a project color</label><br>" +
+                    "<input type='radio' name='mode' id='mtp'/>" +
+                    "<label for='mtp'> Matching the text in a project </label>" +
+                    "<input type='checkbox' id='mtpn'>name </input>" +
+                    "<input type='checkbox' id='mtpd'>description</input>" +
+                    "</form>",
+                set: function (value, parent) {
+                    const modeSelected = `#${value[0]}`.toLowerCase();
+
+                    parent.querySelector(modeSelected).checked = true;
+                    parent.querySelector("#mtpn").checked = value[1];
+                    parent.querySelector("#mtpd").checked = value[2];
+                },
+                get: function (parent) {
+                    const modeSelected = parent
+                        .querySelector('input[name="mode"]:checked')
+                        .id.toUpperCase();
+                    const mtpdChecked = parent.querySelector("#mtpd").checked;
+                    let mtpnChecked = parent.querySelector("#mtpn").checked;
+
+                    // reset to "name" if nothing selected
+                    if (!mtpnChecked && !mtpdChecked) {
+                        mtpnChecked = true;
+                    }
+
+                    return [modeSelected, mtpnChecked, mtpdChecked];
+                },
+                default: ["fppc", true, true]
             }
         },
         onSave: function (values) {
@@ -48,7 +73,7 @@
             opacity: {
                 type: "custom",
                 html:
-                    '<input type="range" min="30" max="100" value="100" class="slider"',
+                    "<input type='range' min='30' max='100' value='100' class='slider'",
                 set: function (value, parent) {
                     parent.querySelectorAll("input")[0].value = value;
                 },
@@ -62,33 +87,38 @@
             location.reload();
         }
     });
-    const MODE = modeSelectConfig.get("highlight");
+
+    const MODE = modeSelectConfig.get("highlight")[0];
+    const MTPD_CHECKED = modeSelectConfig.get("highlight")[1];
+    const MTPN_CHECKED = modeSelectConfig.get("highlight")[2];
 
     const OPACITY = colorOpacityConfig.get("opacity") / 100;
 
+    const KF_COUNT = 10;
+
     const HEX_REGEX = /^(\s+)?((#(0x){0,1}|#{0,1})([0-9A-Fa-f]{8}|[0-9A-Fa-f]{6}))(\s+)?$/;
 
-    function generateKeyFields(count) {
+    function generateKeyFields() {
         let html =
-            '<input type="text" placeholder="keyword" style="width: 10em;" />  ' +
-            '<input type="color" placeholder="HEX color" style="width: 5em;" /></br>';
+            "<input type='text' placeholder='keyword' style='width: 10em;' />  " +
+            "<input type='color' placeholder='HEX color' style='width: 5em;' /></br>";
 
-        for (let i = 0; i < count - 1; i++) {
+        for (let i = 1; i < KF_COUNT; i++) {
             html +=
-                '<input type="text" style="width: 10em;" />  ' +
-                '<input type="color" style="width: 5em;" /></br>';
+                "<input type='text' style='width: 10em;' />  " +
+                "<input type='color' style='width: 5em;' /></br>";
         }
         return html;
     }
 
-    if (MODE === FPSC) {
-        favProjSetColorConfig = new MonkeyConfig({
+    if (MODE === "FPSC") {
+        fpscConfig = new MonkeyConfig({
             title: "Set color",
             menuCommand: true,
             params: {
                 custom_color: {
                     type: "custom",
-                    html: '<input type="color" style="width: 5em;"/>',
+                    html: "<input type='color' style='width: 5em;'/>",
                     set: function (value, parent) {
                         parent.querySelectorAll("input")[0].value = value;
                     },
@@ -108,14 +138,14 @@
                 location.reload();
             }
         });
-    } else if (MODE === MTPN || MODE === MTPD || MODE === MTPND) {
-        matchTextConfig = new MonkeyConfig({
+    } else if (MODE === "MTP") {
+        mtConfig = new MonkeyConfig({
             title: "Set keywords",
             menuCommand: true,
             params: {
                 keywords: {
                     type: "custom",
-                    html: generateKeyFields(10),
+                    html: generateKeyFields(),
                     set: function (value, parent) {
                         let i = 0;
 
@@ -160,7 +190,7 @@
     if (window.location.href.match(/.+(\/dashboard)$/)) {
         let projects = document.querySelectorAll(".project");
 
-        if (MODE === FPPC || MODE === FPSC) {
+        if (MODE === "FPPC" || MODE === "FPSC") {
             for (let i = 0; i < projects.length; i++) {
                 if (projects[i].querySelectorAll(".favorited")[0]) {
                     switchDashboardColor(projects[i]);
@@ -184,7 +214,7 @@
     document.querySelectorAll(".fc_project_switcher")[0].onclick = function () {
         if (switcherNotOpened) {
             // check if switcher is opened to prevent color re-setting
-            if (MODE === FPPC || MODE === FPSC) {
+            if (MODE === "FPPC" || MODE === "FPSC") {
                 let sideProjects = document.querySelectorAll(".f_favorite");
 
                 for (let z = 0; z < sideProjects.length; z++) {
@@ -208,20 +238,37 @@
         switcherNotOpened = false;
     };
 
+    function isKeyMatch(key, name, description) {
+        let matchBool;
+
+        let matchNameBool = name.indexOf(key.toLowerCase()) !== -1;
+        let matchDescBool = description.indexOf(key.toLowerCase()) !== -1;
+        let matchNameDescBool = matchNameBool || matchDescBool;
+
+        if (MTPN_CHECKED && MTPD_CHECKED) {
+            matchBool = matchNameDescBool;
+        } else if (MTPD_CHECKED) {
+            matchBool = matchDescBool;
+        } else {
+            matchBool = matchNameBool;
+        }
+
+        return matchBool;
+    }
+
     function switchSidebarColor(sideProject) {
         let color;
 
         switch (MODE) {
-            case APPC:
+            case "APPC":
+            case "FPPC":
                 color = sideProject.querySelectorAll(".color")[0].style.backgroundColor;
                 break;
-            case FPPC:
-                color = hexToRgb(favProjSetColorConfig.get("custom_color"));
+            case "FPSC":
+                color = hexToRgb(fpscConfig.get("custom_color"));
                 break;
-            case MTPN:
-            case MTPD:
-            case MTPND: {
-                let keywords = matchTextConfig.get("keywords");
+            case "MTP": {
+                let keywords = mtConfig.get("keywords");
 
                 let name = sideProject
                     .querySelectorAll(".name")[0]
@@ -231,23 +278,9 @@
                     .textContent.toLowerCase();
 
                 for (let key in keywords) {
-                    let value = keywords[key];
+                    if (isKeyMatch(key, name, description)) {
+                        const value = keywords[key];
 
-                    let matchBool;
-
-                    let matchNameBool = name.indexOf(key.toLowerCase()) != -1;
-                    let matchDescBool = description.indexOf(key.toLowerCase()) != -1;
-                    let matchNameDescBool = matchNameBool || matchDescBool;
-
-                    if (MODE === MTPN) {
-                        matchBool = matchNameBool;
-                    } else if (MODE === MTPD) {
-                        matchBool = matchDescBool;
-                    } else {
-                        matchBool = matchNameDescBool;
-                    }
-
-                    if (matchBool) {
                         color = hexToRgb(value);
                         break;
                     }
@@ -293,17 +326,15 @@
         let color, colorIsLight, opColor;
 
         switch (MODE) {
-            case FPPC:
-            case APPC:
+            case "FPPC":
+            case "APPC":
                 color = pBlock.querySelectorAll(".card_color")[0].style.backgroundColor;
                 break;
-            case FPSC:
-                color = hexToRgb(favProjSetColorConfig.get("custom_color"));
+            case "FPSC":
+                color = hexToRgb(fpscConfig.get("custom_color"));
                 break;
-            case MTPN:
-            case MTPD:
-            case MTPND: {
-                let keywords = matchTextConfig.get("keywords");
+            case "MTP": {
+                let keywords = mtConfig.get("keywords");
                 let name = pBlock
                     .querySelectorAll(".project_name")[0]
                     .textContent.toLowerCase();
@@ -312,24 +343,11 @@
                     .textContent.toLowerCase();
 
                 for (let key in keywords) {
-                    let value = keywords[key];
+                    if (isKeyMatch(key, name, description)) {
+                        const value = keywords[key];
 
-                    let matchBool;
-
-                    let matchNameBool = name.indexOf(key.toLowerCase()) != -1;
-                    let matchDescBool = description.indexOf(key.toLowerCase()) != -1;
-                    let matchNameDescBool = matchNameBool || matchDescBool;
-
-                    if (MODE === MTPN) {
-                        matchBool = matchNameBool;
-                    } else if (MODE === MTPD) {
-                        matchBool = matchDescBool;
-                    } else {
-                        matchBool = matchNameDescBool;
-                    }
-
-                    if (matchBool) {
                         color = hexToRgb(value);
+                        break;
                     }
                 }
 
