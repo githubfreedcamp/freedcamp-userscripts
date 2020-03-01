@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp project colors
 // @namespace    http://freedcamp.com/
-// @version      0.10
+// @version      0.11
 // @description  enable project cards background color
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
@@ -25,10 +25,6 @@
             highlight: {
                 type: "custom",
                 html:
-                    "<script>" +
-                    "function test() { console.log('aaaa') }" +
-                    "</script>" +
-                    "<form>" +
                     "<input type='radio' name='mode' id='fppc'/>" +
                     "<label for='fppc'> Favorite projects with a project color</label><br>" +
                     "<input type='radio' name='mode' id='fpsc'/>" +
