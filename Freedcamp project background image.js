@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp project background image
 // @namespace    http://freedcamp.com/
-// @version      0.1
+// @version      0.2
 // @description  set project background image
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
@@ -137,7 +137,11 @@
                 } catch (e) {
                 }
 
-                document.body.style.background = `url(${currentBackground})`;
+                const s = document.body.style;
+
+                s.background = `url(${currentBackground})`;
+                s.backgroundSize = "100vw 100vh";
+                s.backgroundAttachment = "fixed";
             }
         });
     }
