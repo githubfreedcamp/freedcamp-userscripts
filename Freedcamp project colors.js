@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp project colors
 // @namespace    http://freedcamp.com/
-// @version      0.9
+// @version      0.10
 // @description  enable project cards background color
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
@@ -25,6 +25,9 @@
             highlight: {
                 type: "custom",
                 html:
+                    "<script>" +
+                    "function test() { console.log('aaaa') }" +
+                    "</script>" +
                     "<form>" +
                     "<input type='radio' name='mode' id='fppc'/>" +
                     "<label for='fppc'> Favorite projects with a project color</label><br>" +
@@ -98,17 +101,42 @@
 
     const HEX_REGEX = /^(\s+)?((#(0x){0,1}|#{0,1})([0-9A-Fa-f]{8}|[0-9A-Fa-f]{6}))(\s+)?$/;
 
-    function generateKeyFields() {
+    function mtpGenerateKeyFields(keywords) {
         let html =
             "<input type='text' placeholder='keyword' style='width: 10em;' />  " +
             "<input type='color' placeholder='HEX color' style='width: 5em;' /></br>";
 
-        for (let i = 1; i < KF_COUNT; i++) {
+        let kCount = 0;
+
+        for (let key in keywords) {
+            kCount++;
+        }
+
+        for (let i = 1; i < kCount; i++) {
             html +=
                 "<input type='text' style='width: 10em;' />  " +
                 "<input type='color' style='width: 5em;' /></br>";
         }
+
+        const buttonStyle =
+            "display:inline-block;" +
+            "border-radius: 2px;" +
+            "background-color: #4CAF50;" +
+            "color: white;" +
+            "padding: 1em;" +
+            "margin-top: 0.5em;" +
+            "width: 15.5em;";
+
+        html += `<button id='addButton' style='${buttonStyle}'>Add +1 keyword</button>`;
+
         return html;
+    }
+
+    function mtpSetCenter() {
+        document.getElementsByClassName("__MonkeyConfig_layer")[0].style.top =
+            "50%";
+        document.getElementsByClassName("__MonkeyConfig_layer")[0].style.transform =
+            "translate(0, -50%)";
     }
 
     if (MODE === "FPSC") {
@@ -145,8 +173,53 @@
             params: {
                 keywords: {
                     type: "custom",
-                    html: generateKeyFields(),
+                    html: "",
                     set: function (value, parent) {
+                        const existingFields = mtpGenerateKeyFields(value);
+                        parent.innerHTML = existingFields;
+
+                        const iframe = document.getElementById("__MonkeyConfig_frame")
+                            .contentWindow.document;
+                        const configContainer = iframe.querySelector(
+                            ".__MonkeyConfig_container"
+                        );
+
+                        document.getElementById(
+                            "__MonkeyConfig_frame"
+                        ).style.height = `${configContainer.offsetHeight}px`;
+
+                        let isStyleSet = false;
+
+                        parent.querySelector("#addButton").onclick = function () {
+                            const button = parent.querySelector("#addButton");
+                            parent.removeChild(button);
+                            const newField =
+                                "<input type='text' style='width: 10em;' />  " +
+                                "<input type='color' style='width: 5em;' /></br>";
+
+                            parent.insertAdjacentHTML("beforeend", newField);
+
+                            const oldHeight = document.getElementById("__MonkeyConfig_frame")
+                                .offsetHeight;
+                            const oldTop = document.getElementsByClassName(
+                                "__MonkeyConfig_layer"
+                            )[0].offsetTop;
+
+                            const newHeight = oldHeight + 23;
+
+                            document.getElementById(
+                                "__MonkeyConfig_frame"
+                            ).style.height = `${newHeight}px`;
+
+                            if (!isStyleSet) {
+                                mtpSetCenter();
+
+                                isStyleSet = true;
+                            }
+
+                            parent.append(button);
+                        };
+
                         let i = 0;
 
                         for (let key in value) {
