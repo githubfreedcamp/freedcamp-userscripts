@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp project colors
 // @namespace    http://freedcamp.com/
-// @version      0.13
+// @version      0.14
 // @description  enable project cards background color
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
@@ -34,8 +34,7 @@
                     "<input type='radio' name='mode' id='mtp'/>" +
                     "<label for='mtp'> Matching the text in a project </label>" +
                     "<input type='checkbox' id='mtpn'>name </input>" +
-                    "<input type='checkbox' id='mtpd'>description</input>" +
-                    "</form>",
+                    "<input type='checkbox' id='mtpd'>description</input>",
                 set: function (value, parent) {
                     const modeSelected = `#${value[0]}`.toLowerCase();
 
@@ -72,7 +71,7 @@
             opacity: {
                 type: "custom",
                 html:
-                    "<input type='range' min='30' max='100' value='100'/>",
+                    "<input type='range' min='10' max='100' value='100'/>",
                 set: function (value, parent) {
                     parent.querySelector("input").value = value;
                 },
