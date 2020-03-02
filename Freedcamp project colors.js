@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp project colors
 // @namespace    http://freedcamp.com/
-// @version      0.12
+// @version      0.13
 // @description  enable project cards background color
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
@@ -72,7 +72,7 @@
             opacity: {
                 type: "custom",
                 html:
-                    "<input type='range' min='30' max='100' value='100' class='slider'",
+                    "<input type='range' min='30' max='100' value='100'/>",
                 set: function (value, parent) {
                     parent.querySelector("input").value = value;
                 },
@@ -97,8 +97,8 @@
 
     function mtpGenerateKeyFields(keywords) {
         let html =
-            "<input type='text' placeholder='keyword' style='width: 10em;' />  " +
-            "<input type='color' placeholder='HEX color' style='width: 5em;' /></br>";
+            "<input type='text' placeholder='keyword' style='width: 10em;'/>  " +
+            "<input type='color' placeholder='HEX color' style='width: 5em;'/></br>";
 
         let kCount = 0;
 
@@ -108,8 +108,8 @@
 
         for (let i = 1; i < kCount; i++) {
             html +=
-                "<input type='text' style='width: 10em;' />  " +
-                "<input type='color' style='width: 5em;' /></br>";
+                "<input type='text' style='width: 10em;'/>  " +
+                "<input type='color' style='width: 5em;'/></br>";
         }
 
         const buttonStyle =
@@ -187,8 +187,8 @@
                             const button = parent.querySelector("#addButton");
                             parent.removeChild(button);
                             const newField =
-                                "<input type='text' style='width: 10em;' />  " +
-                                "<input type='color' style='width: 5em;' /></br>";
+                                "<input type='text' style='width: 10em;'/>  " +
+                                "<input type='color' style='width: 5em;'/></br>";
 
                             parent.insertAdjacentHTML("beforeend", newField);
 
