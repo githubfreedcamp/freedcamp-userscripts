@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp project colors
 // @namespace    http://freedcamp.com/
-// @version      0.14
+// @version      0.15
 // @description  enable project cards background color
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
@@ -249,7 +249,7 @@
     }
 
     // on dashboard page
-    if (window.location.href.match(/.+(\/dashboard)$/)) {
+    if (window.location.href.match(/.+\/dashboard(\/)?$/)) {
         const projects = document.querySelectorAll(".project");
 
         if (MODE === "FPPC" || MODE === "FPSC") {
