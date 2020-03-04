@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp project background image
 // @namespace    http://freedcamp.com/
-// @version      0.4
+// @version      0.5
 // @description  set project background image
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
@@ -55,27 +55,32 @@
         grandParent.parentNode.removeChild(grandParent);
     }
 
-    function invertColor(element, isLight) {
-        if (element.style.color) {
-            element.removeAttribute("style");
-        } else {
-            element.style.color = isLight ? "black" : "white";
-        }
+    function invertColor(element, fontInverted) {
+        element.color = fontInverted ? "black" : "white";
+        element.overflow = "visible";
+        element.textShadow = `${fontInverted ? "white" : "black"} 0px 1px 4px`;
     }
 
     function setProjectBackground(url, fontColor) {
         try {
-            document.querySelector("#improved_filters .sort").style.color = fontColor;
-            document.querySelector(
-                "#improved_filters .filter_label"
-            ).style.color = fontColor;
+            const shadowColor = fontColor === "white" ? "black" : "white";
+
+            const sortLabel = document.querySelector(".sort").style;
+            const filterLabel = document.querySelector(".filter_label").style;
+
+            sortLabel.color = fontColor;
+            sortLabel.textShadow = `${shadowColor} 0px 1px 8px`;
+            filterLabel.color = fontColor;
+            filterLabel.textShadow = `${shadowColor} 0px 1px 8px`;
         } catch (e) {
         }
 
         const s = document.body.style;
 
         s.background = `url(${url})`;
-        s.backgroundSize = "100vw 100vh";
+        s.backgroundSize = "cover";
+        s.backgroundRepeat = "no-repeat";
+        s.backgroundPosition = "50% 50%";
         s.backgroundAttachment = "fixed";
     }
 
@@ -271,12 +276,12 @@
 
                                 const name = pBlock.querySelector(".project_name");
 
-                                invertColor(name, fontInverted);
+                                invertColor(name.style, fontInverted);
 
                                 if (noDesc) {
-                                    invertColor(noDesc, fontInverted);
+                                    invertColor(noDesc.style, fontInverted);
                                 } else {
-                                    invertColor(desc, fontInverted);
+                                    invertColor(desc.style, fontInverted);
                                 }
                             }
                         });
@@ -287,78 +292,124 @@
             const dbParams = imageSelectConfig.get("dashboard_background");
             const dbUrl = dbParams.url;
             const dbEnabled = dbParams.enabled;
-            const color = dbParams.font_inverted ? "black" : "white";
+            const fontColor = dbParams.font_inverted ? "black" : "white";
+            const shadowColor = dbParams.font_inverted ? "white" : "black";
 
             if (dbEnabled) {
                 testImage(dbUrl, "Dashboard").then(success => {
                     if (success) {
-                        const s = document.body.style;
+                        const body = document.body.style;
 
-                        s.background = `url(${dbUrl})`;
-                        s.backgroundSize = "100vw 100vh";
-                        s.backgroundAttachment = "fixed";
+                        body.background = `url(${dbUrl})`;
+                        body.backgroundSize = "cover";
+                        body.backgroundRepeat = "no-repeat";
+                        body.backgroundPosition = "50% 50%";
+                        body.backgroundAttachment = "fixed";
 
                         switch (page) {
                             case "dashboard/home": {
-                                document.querySelector(
+                                const greetingName = document.querySelector(
                                     ".heading-xl.greeting_name"
-                                ).style.color = color;
+                                ).style;
+                                const greetingMessage = document.querySelector(
+                                    ".text-xl.greeting_message"
+                                ).style;
+
+                                greetingName.color = fontColor;
+                                greetingName.textShadow = `${shadowColor} 0px 1px 18px`;
+                                greetingMessage.color = fontColor;
+                                greetingMessage.textShadow = `${shadowColor} 0px 1px 18px`;
+
                                 break;
                             }
                             case "dashboard": {
                                 const subheaders = document.querySelectorAll(".subheader");
                                 subheaders.forEach(subheader => {
-                                    subheader.style.color = color;
+                                    subheader.style.color = fontColor;
+                                    subheader.style.textShadow = `${shadowColor} 0px 1px 14px`;
                                 });
 
-                                document.querySelector(".greeting.left").style.color = color;
+                                const greeting = document.querySelector(".greeting.left").style;
+                                greeting.color = fontColor;
+                                greeting.textShadow = `${shadowColor} 0px 1px 18px`;
+
                                 break;
                             }
                             case "dashboard/tasks": {
-                                document.querySelector(".sort").style.color = color;
-                                document.querySelector(".filter_label").style.color = color;
+                                const sortLabel = document.querySelector(".sort").style;
+                                const filterLabel = document.querySelector(".filter_label")
+                                    .style;
+
+                                sortLabel.color = fontColor;
+                                sortLabel.textShadow = `${shadowColor} 0px 1px 8px`;
+                                filterLabel.color = fontColor;
+                                filterLabel.textShadow = `${shadowColor} 0px 1px 8px`;
+
                                 break;
                             }
                             case "dashboard/calendar": {
-                                document.querySelector(".filter_label").style.color = color;
+                                const filterLabel = document.querySelector(".filter_label")
+                                    .style;
+
+                                filterLabel.color = fontColor;
+                                filterLabel.textShadow = `${shadowColor} 0px 1px 8px`;
+
                                 break;
                             }
                             case "dashboard/widgets": {
                                 document.querySelector(
                                     ".no_entries.no_widgets"
-                                ).style.color = color;
+                                ).style.color = fontColor;
+
                                 break;
                             }
                             case "dashboard/reports": {
                                 const rtInterval = setInterval(function () {
                                     if (document.querySelector("#report_text")) {
-                                        document.querySelector("#report_text").style.color = color;
+                                        const reportText = document.querySelector("#report_text")
+                                            .style;
+
+                                        reportText.color = fontColor;
+                                        reportText.textShadow = `${shadowColor} 0px 1px 18px`;
+
                                         clearInterval(rtInterval);
                                     }
                                 }, 100);
 
                                 const rndInterval = setInterval(function () {
                                     if (document.querySelector("#report_name_and_date")) {
-                                        document.querySelector(
+                                        const reportNameDate = document.querySelector(
                                             "#report_name_and_date"
-                                        ).style.color = color;
-                                        clearInterval(rndInterval);
-                                    }
-                                }, 100);
+                                        ).style;
 
-                                const rcbInterval = setInterval(function () {
-                                    if (document.querySelector("#report_created_by")) {
-                                        document.querySelector(
-                                            "#report_created_by"
-                                        ).style.color = color;
-                                        clearInterval(rcbInterval);
+                                        reportNameDate.color = fontColor;
+                                        reportNameDate.textShadow = `${shadowColor} 0px 1px 2px`;
+
+                                        clearInterval(rndInterval);
                                     }
                                 }, 100);
 
                                 const fgsInterval = setInterval(function () {
                                     if (document.querySelector(".fg-slate")) {
-                                        document.querySelector(".fg-slate").style.color = color;
+                                        const fgSlate = document.querySelector(".fg-slate").style;
+
+                                        fgSlate.color = fontColor;
+                                        fgSlate.textShadow = `${shadowColor} 0px 1px 2px`;
+
                                         clearInterval(fgsInterval);
+                                    }
+                                }, 100);
+
+                                const rcbInterval = setInterval(function () {
+                                    if (document.querySelector("#report_created_by")) {
+                                        const reportCreatedBy = document.querySelector(
+                                            "#report_created_by"
+                                        ).style;
+
+                                        reportCreatedBy.color = fontColor;
+                                        reportCreatedBy.textShadow = `${shadowColor} 0px 1px 2px`;
+
+                                        clearInterval(rcbInterval);
                                     }
                                 }, 100);
 
