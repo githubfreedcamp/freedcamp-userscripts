@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp custom image background
 // @namespace    http://freedcamp.com/
-// @version      0.6
+// @version      0.7
 // @description  set project background image
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
@@ -55,10 +55,11 @@
         grandParent.parentNode.removeChild(grandParent);
     }
 
-    function invertColor(element, fontInverted) {
+    function setProjectCardFontColor(element, fontInverted, marginLeftPx, shadowPx) {
         element.color = fontInverted ? "black" : "white";
         element.overflow = "visible";
-        element.textShadow = `${fontInverted ? "white" : "black"} 0px 1px 4px`;
+        element.marginLeft = `${marginLeftPx}px`;
+        element.textShadow = `${fontInverted ? "white" : "black"} 0px 1px ${shadowPx}px`;
     }
 
     function setProjectBackground(url, fontColor) {
@@ -276,12 +277,12 @@
 
                                 const name = pBlock.querySelector(".project_name");
 
-                                invertColor(name.style, fontInverted);
+                                setProjectCardFontColor(name.style, fontInverted, 0, 4);
 
                                 if (noDesc) {
-                                    invertColor(noDesc.style, fontInverted);
+                                    setProjectCardFontColor(noDesc.style, fontInverted, 1, 2);
                                 } else {
-                                    invertColor(desc.style, fontInverted);
+                                    setProjectCardFontColor(desc.style, fontInverted, 1, 2);
                                 }
                             }
                         });
