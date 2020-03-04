@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp project colors
 // @namespace    http://freedcamp.com/
-// @version      0.15
+// @version      0.16
 // @description  enable project cards background color
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
@@ -358,10 +358,10 @@
 
             const fcApps = sideProject.querySelectorAll(".fc_app");
 
-            inverseColor(name, colorIsLight);
+            invertColor(name, colorIsLight);
 
             if (desc) {
-                inverseColor(desc, colorIsLight);
+                invertColor(desc, colorIsLight);
             }
 
             // make buttons dark
@@ -431,12 +431,12 @@
                 pBlock.style.background = opColor;
             }
 
-            inverseColor(name, colorIsLight);
+            invertColor(name, colorIsLight);
 
             if (noDesc) {
-                inverseColor(noDesc, colorIsLight);
+                invertColor(noDesc, colorIsLight);
             } else {
-                inverseColor(desc, colorIsLight);
+                invertColor(desc, colorIsLight);
             }
 
             if (cogImage.style.color) {
@@ -463,7 +463,7 @@
         return hsp > 127.5;
     }
 
-    function inverseColor(element, light) {
+    function invertColor(element, light) {
         if (element.style.color) {
             element.removeAttribute("style");
         } else {
