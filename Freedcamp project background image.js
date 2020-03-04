@@ -1,7 +1,7 @@
 // ==UserScript==
-// @name         Freedcamp project background image
+// @name         Freedcamp custom image background
 // @namespace    http://freedcamp.com/
-// @version      0.5
+// @version      0.6
 // @description  set project background image
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
