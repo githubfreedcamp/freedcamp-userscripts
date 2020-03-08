@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp custom image background
 // @namespace    http://freedcamp.com/
-// @version      0.7
+// @version      0.8
 // @description  set project background image
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
@@ -15,6 +15,8 @@
 
 (function () {
     "use strict";
+
+    let cbKeys = {};
 
     function testImage(url, name) {
         return new Promise(function (resolve, reject) {
@@ -33,7 +35,7 @@
             timer = setTimeout(function () {
                 // reset .src to invalid URL so it stops previous
                 // loading, but doens't trigger new load
-                img.src = "//!!!!/noexist.jpg";
+                img.src = "//!!!!/notexist.jpg";
                 viewUrlError(name);
                 reject(false);
             }, timeout);
@@ -42,24 +44,11 @@
     }
 
     function viewUrlError(text) {
-        alert(
-            `${text} background image error:\nIncorrect background url! Please change it.`
-        );
-    }
-
-    let lastUrls = {};
-    let lastSwitchers = {};
-
-    function deleteHtmlElement(element) {
-        const grandParent = element.parentNode;
-        grandParent.parentNode.removeChild(grandParent);
-    }
-
-    function setProjectCardFontColor(element, fontInverted, marginLeftPx, shadowPx) {
-        element.color = fontInverted ? "black" : "white";
-        element.overflow = "visible";
-        element.marginLeft = `${marginLeftPx}px`;
-        element.textShadow = `${fontInverted ? "white" : "black"} 0px 1px ${shadowPx}px`;
+        setTimeout(function () {
+            alert(
+                `${text} background image error:\nIncorrect background url! Please change it.`
+            );
+        }, 2000);
     }
 
     function setProjectBackground(url, fontColor) {
@@ -85,6 +74,42 @@
         s.backgroundAttachment = "fixed";
     }
 
+    function setProjectCardBackground(pBlock, backgroundUrl, fontInverted) {
+        pBlock.style =
+            `background:url(${backgroundUrl});` +
+            "background-size: cover;" +
+            "background-repeat: no-repeat;" +
+            "background-position: 50% 50%;" +
+            "transition-property: none !important;";
+
+        const desc = pBlock.querySelector(".project_desc");
+        const noDesc = pBlock.querySelector(".no_description");
+        const cogImage = pBlock.querySelector(".cog_image");
+
+        const name = pBlock.querySelector(".project_name");
+
+        setProjectCardFontColor(name.style, fontInverted, 0, 4);
+
+        if (noDesc) {
+            setProjectCardFontColor(noDesc.style, fontInverted, 1, 2);
+        } else {
+            setProjectCardFontColor(desc.style, fontInverted, 1, 2);
+        }
+    }
+
+    function setProjectCardFontColor(
+        element,
+        fontInverted,
+        marginLeftPx,
+        shadowPx
+    ) {
+        element.color = fontInverted ? "black" : "white";
+        element.marginLeft = `${marginLeftPx}px`;
+        element.textShadow = `${
+            fontInverted ? "white" : "black"
+        } 0px 1px ${shadowPx}px`;
+    }
+
     const imageSelectConfig = new MonkeyConfig({
         title: "Config",
         menuCommand: true,
@@ -99,7 +124,7 @@
                     "<label for='invert_cpb'> Invert font color</label>"
                     : "",
                 set: function (value, parent) {
-                    lastUrls = Object.keys(value).length !== 0 ? value : lastUrls;
+                    cbKeys = Object.keys(value).length !== 0 ? value : cbKeys;
 
                     if (project_unique_name) {
                         const input = parent.querySelectorAll("input");
@@ -134,20 +159,16 @@
                     if (project_unique_name) {
                         const input = parent.querySelectorAll("input");
 
-                        lastUrls[project_unique_name] = {
+                        cbKeys[project_unique_name] = {
                             url: input[0].value,
                             enabled: input[1].checked,
                             font_inverted: input[2].checked
                         };
                     }
 
-                    return lastUrls;
+                    return cbKeys;
                 },
                 default: {}
-            },
-            display_custom_backgrounds_on_project_cards: {
-                type: "checkbox",
-                default: false
             },
             default_project_background: {
                 type: "custom",
@@ -172,6 +193,10 @@
                     return {url: url, enabled: enabled, font_inverted: fontInverted};
                 },
                 default: {url: "", enabled: false, font_inverted: false}
+            },
+            display_backgrounds_on_project_cards: {
+                type: "checkbox",
+                default: false
             },
             dashboard_background: {
                 type: "custom",
@@ -242,59 +267,65 @@
         if (match) {
             const page = match[match.length - 1];
 
-            const pcbEnabled = imageSelectConfig.get(
-                "display_custom_backgrounds_on_project_cards"
+            const dbpEnabled = imageSelectConfig.get(
+                "display_backgrounds_on_project_cards"
             );
 
-            if (pcbEnabled && page === "dashboard") {
-                const backgroundUrls = imageSelectConfig.get(
-                    "custom_project_background"
-                );
+            // switch project cards backgrounds
+            if (dbpEnabled && page === "dashboard") {
+                const cpbUrls = imageSelectConfig.get("custom_project_background");
 
-                for (let projectName in backgroundUrls) {
-                    if (backgroundUrls[projectName].enabled) {
-                        const pBlock = document.querySelector(
-                            `[data-unique="${projectName}"]`
-                        ).parentElement.parentElement;
+                const dpbConfig = imageSelectConfig.get("default_project_background");
 
-                        const backgroundUrl = backgroundUrls[projectName].url;
+                let dpbUrlChecked = false;
+                let dpbUrlVerified = false;
 
-                        testImage(backgroundUrl, `Project ${projectName}`).then(success => {
+                const dpbUrl = dpbConfig.url;
+                const dpbFontInverted = dpbConfig.font_inverted;
+                const dpbEnabled = dpbConfig.enabled;
+
+                const pBlocks = document.querySelectorAll(".project");
+
+                pBlocks.forEach(pBlock => {
+                    const pName = pBlock
+                        .querySelector("[data-unique]")
+                        .getAttribute("data-unique");
+
+                    if (cpbUrls[pName].enabled) {
+                        const cpbUrl = cpbUrls[pName].url;
+
+                        testImage(cpbUrl, `Project ${pName}`).then(success => {
                             if (success) {
                                 // set background image and disable animation
-                                pBlock.style =
-                                    `background:url(${backgroundUrl});` +
-                                    "background-size: cover;" +
-                                    "background-repeat: no-repeat;" +
-                                    "background-position: 50% 50%;" +
-                                    "transition-property: none !important;";
+                                const fontInverted = cpbUrls[pName].font_inverted;
 
-                                const fontInverted = backgroundUrls[projectName].font_inverted;
-
-                                const desc = pBlock.querySelector(".project_desc");
-                                const noDesc = pBlock.querySelector(".no_description");
-                                const cogImage = pBlock.querySelector(".cog_image");
-
-                                const name = pBlock.querySelector(".project_name");
-
-                                setProjectCardFontColor(name.style, fontInverted, 0, 4);
-
-                                if (noDesc) {
-                                    setProjectCardFontColor(noDesc.style, fontInverted, 1, 2);
-                                } else {
-                                    setProjectCardFontColor(desc.style, fontInverted, 1, 2);
-                                }
+                                setProjectCardBackground(pBlock, cpbUrl, fontInverted);
                             }
                         });
+                    } else if (dpbEnabled) {
+                        // check default background url only once
+                        if (!dpbUrlChecked) {
+                            testImage(dpbUrl, "Default project").then(success => {
+                                dpbUrlChecked = true;
+
+                                if (success) {
+                                    dpbUrlVerified = true;
+
+                                    setProjectCardBackground(pBlock, dpbUrl, dpbFontInverted);
+                                }
+                            });
+                        } else if (dpbUrlVerified) {
+                            setProjectCardBackground(pBlock, dpbUrl, dpbFontInverted);
+                        }
                     }
-                }
+                });
             }
 
             const dbParams = imageSelectConfig.get("dashboard_background");
             const dbUrl = dbParams.url;
             const dbEnabled = dbParams.enabled;
-            const fontColor = dbParams.font_inverted ? "black" : "white";
-            const shadowColor = dbParams.font_inverted ? "white" : "black";
+            const dbFontColor = dbParams.font_inverted ? "black" : "white";
+            const dbShadowColor = dbParams.font_inverted ? "white" : "black";
 
             if (dbEnabled) {
                 testImage(dbUrl, "Dashboard").then(success => {
@@ -316,23 +347,23 @@
                                     ".text-xl.greeting_message"
                                 ).style;
 
-                                greetingName.color = fontColor;
-                                greetingName.textShadow = `${shadowColor} 0px 1px 18px`;
-                                greetingMessage.color = fontColor;
-                                greetingMessage.textShadow = `${shadowColor} 0px 1px 18px`;
+                                greetingName.color = dbFontColor;
+                                greetingName.textShadow = `${dbShadowColor} 0px 1px 18px`;
+                                greetingMessage.color = dbFontColor;
+                                greetingMessage.textShadow = `${dbShadowColor} 0px 1px 18px`;
 
                                 break;
                             }
                             case "dashboard": {
                                 const subheaders = document.querySelectorAll(".subheader");
                                 subheaders.forEach(subheader => {
-                                    subheader.style.color = fontColor;
-                                    subheader.style.textShadow = `${shadowColor} 0px 1px 14px`;
+                                    subheader.style.color = dbFontColor;
+                                    subheader.style.textShadow = `${dbShadowColor} 0px 1px 14px`;
                                 });
 
                                 const greeting = document.querySelector(".greeting.left").style;
-                                greeting.color = fontColor;
-                                greeting.textShadow = `${shadowColor} 0px 1px 18px`;
+                                greeting.color = dbFontColor;
+                                greeting.textShadow = `${dbShadowColor} 0px 1px 18px`;
 
                                 break;
                             }
@@ -341,10 +372,10 @@
                                 const filterLabel = document.querySelector(".filter_label")
                                     .style;
 
-                                sortLabel.color = fontColor;
-                                sortLabel.textShadow = `${shadowColor} 0px 1px 8px`;
-                                filterLabel.color = fontColor;
-                                filterLabel.textShadow = `${shadowColor} 0px 1px 8px`;
+                                sortLabel.color = dbFontColor;
+                                sortLabel.textShadow = `${dbShadowColor} 0px 1px 8px`;
+                                filterLabel.color = dbFontColor;
+                                filterLabel.textShadow = `${dbShadowColor} 0px 1px 8px`;
 
                                 break;
                             }
@@ -352,15 +383,15 @@
                                 const filterLabel = document.querySelector(".filter_label")
                                     .style;
 
-                                filterLabel.color = fontColor;
-                                filterLabel.textShadow = `${shadowColor} 0px 1px 8px`;
+                                filterLabel.color = dbFontColor;
+                                filterLabel.textShadow = `${dbShadowColor} 0px 1px 8px`;
 
                                 break;
                             }
                             case "dashboard/widgets": {
                                 document.querySelector(
                                     ".no_entries.no_widgets"
-                                ).style.color = fontColor;
+                                ).style.color = dbFontColor;
 
                                 break;
                             }
@@ -370,8 +401,8 @@
                                         const reportText = document.querySelector("#report_text")
                                             .style;
 
-                                        reportText.color = fontColor;
-                                        reportText.textShadow = `${shadowColor} 0px 1px 18px`;
+                                        reportText.color = dbFontColor;
+                                        reportText.textShadow = `${dbShadowColor} 0px 1px 18px`;
 
                                         clearInterval(rtInterval);
                                     }
@@ -383,8 +414,8 @@
                                             "#report_name_and_date"
                                         ).style;
 
-                                        reportNameDate.color = fontColor;
-                                        reportNameDate.textShadow = `${shadowColor} 0px 1px 2px`;
+                                        reportNameDate.color = dbFontColor;
+                                        reportNameDate.textShadow = `${dbShadowColor} 0px 1px 2px`;
 
                                         clearInterval(rndInterval);
                                     }
@@ -394,8 +425,8 @@
                                     if (document.querySelector(".fg-slate")) {
                                         const fgSlate = document.querySelector(".fg-slate").style;
 
-                                        fgSlate.color = fontColor;
-                                        fgSlate.textShadow = `${shadowColor} 0px 1px 2px`;
+                                        fgSlate.color = dbFontColor;
+                                        fgSlate.textShadow = `${dbShadowColor} 0px 1px 2px`;
 
                                         clearInterval(fgsInterval);
                                     }
@@ -407,8 +438,8 @@
                                             "#report_created_by"
                                         ).style;
 
-                                        reportCreatedBy.color = fontColor;
-                                        reportCreatedBy.textShadow = `${shadowColor} 0px 1px 2px`;
+                                        reportCreatedBy.color = dbFontColor;
+                                        reportCreatedBy.textShadow = `${dbShadowColor} 0px 1px 2px`;
 
                                         clearInterval(rcbInterval);
                                     }
