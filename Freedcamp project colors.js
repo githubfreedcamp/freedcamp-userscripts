@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp project colors
 // @namespace    http://freedcamp.com/
-// @version      0.11
+// @version      0.16
 // @description  enable project cards background color
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
@@ -34,8 +34,7 @@
                     "<input type='radio' name='mode' id='mtp'/>" +
                     "<label for='mtp'> Matching the text in a project </label>" +
                     "<input type='checkbox' id='mtpn'>name </input>" +
-                    "<input type='checkbox' id='mtpd'>description</input>" +
-                    "</form>",
+                    "<input type='checkbox' id='mtpd'>description</input>",
                 set: function (value, parent) {
                     const modeSelected = `#${value[0]}`.toLowerCase();
 
@@ -72,12 +71,12 @@
             opacity: {
                 type: "custom",
                 html:
-                    "<input type='range' min='30' max='100' value='100' class='slider'",
+                    "<input type='range' min='10' max='100' value='100'/>",
                 set: function (value, parent) {
-                    parent.querySelectorAll("input")[0].value = value;
+                    parent.querySelector("input").value = value;
                 },
                 get: function (parent) {
-                    return parent.querySelectorAll("input")[0].value;
+                    return parent.querySelector("input").value;
                 },
                 default: "50"
             }
@@ -93,14 +92,12 @@
 
     const OPACITY = colorOpacityConfig.get("opacity") / 100;
 
-    const KF_COUNT = 10;
-
     const HEX_REGEX = /^(\s+)?((#(0x){0,1}|#{0,1})([0-9A-Fa-f]{8}|[0-9A-Fa-f]{6}))(\s+)?$/;
 
     function mtpGenerateKeyFields(keywords) {
         let html =
-            "<input type='text' placeholder='keyword' style='width: 10em;' />  " +
-            "<input type='color' placeholder='HEX color' style='width: 5em;' /></br>";
+            "<input type='text' placeholder='keyword' style='width: 10em;'/>  " +
+            "<input type='color' placeholder='HEX color' style='width: 5em;'/></br>";
 
         let kCount = 0;
 
@@ -110,8 +107,8 @@
 
         for (let i = 1; i < kCount; i++) {
             html +=
-                "<input type='text' style='width: 10em;' />  " +
-                "<input type='color' style='width: 5em;' /></br>";
+                "<input type='text' style='width: 10em;'/>  " +
+                "<input type='color' style='width: 5em;'/></br>";
         }
 
         const buttonStyle =
@@ -144,10 +141,10 @@
                     type: "custom",
                     html: "<input type='color' style='width: 5em;'/>",
                     set: function (value, parent) {
-                        parent.querySelectorAll("input")[0].value = value;
+                        parent.querySelector("input").value = value;
                     },
                     get: function (parent) {
-                        let value = parent.querySelectorAll("input")[0].value;
+                        const value = parent.querySelector("input").value;
                         if (!value.match(HEX_REGEX)) {
                             alert("Wrong HEX color! Restored default.");
                             return "#00FF00";
@@ -171,8 +168,7 @@
                     type: "custom",
                     html: "",
                     set: function (value, parent) {
-                        const existingFields = mtpGenerateKeyFields(value);
-                        parent.innerHTML = existingFields;
+                        parent.innerHTML = mtpGenerateKeyFields(value);
 
                         const iframe = document.getElementById("__MonkeyConfig_frame")
                             .contentWindow.document;
@@ -190,16 +186,13 @@
                             const button = parent.querySelector("#addButton");
                             parent.removeChild(button);
                             const newField =
-                                "<input type='text' style='width: 10em;' />  " +
-                                "<input type='color' style='width: 5em;' /></br>";
+                                "<input type='text' style='width: 10em;'/>  " +
+                                "<input type='color' style='width: 5em;'/></br>";
 
                             parent.insertAdjacentHTML("beforeend", newField);
 
                             const oldHeight = document.getElementById("__MonkeyConfig_frame")
                                 .offsetHeight;
-                            const oldTop = document.getElementsByClassName(
-                                "__MonkeyConfig_layer"
-                            )[0].offsetTop;
 
                             const newHeight = oldHeight + 23;
 
@@ -231,7 +224,7 @@
                     get: function (parent) {
                         let result = {};
 
-                        let inputs = parent.querySelectorAll("input");
+                        const inputs = parent.querySelectorAll("input");
 
                         for (let i = 0; i < inputs.length; i += 2) {
                             const key = inputs[i].value;
@@ -256,18 +249,18 @@
     }
 
     // on dashboard page
-    if (window.location.href.match(/.+(\/dashboard)$/)) {
-        let projects = document.querySelectorAll(".project");
+    if (window.location.href.match(/.+\/dashboard(\/)?$/)) {
+        const projects = document.querySelectorAll(".project");
 
         if (MODE === "FPPC" || MODE === "FPSC") {
             for (let i = 0; i < projects.length; i++) {
-                if (projects[i].querySelectorAll(".favorited")[0]) {
+                if (projects[i].querySelector(".favorited")) {
                     switchDashboardColor(projects[i]);
                 }
 
-                projects[i].querySelectorAll(
+                projects[i].querySelector(
                     ".favorite_project_action"
-                )[0].onclick = function () {
+                ).onclick = function () {
                     switchDashboardColor(projects[i]);
                 };
             }
@@ -280,24 +273,22 @@
 
     // sidebar
     let switcherNotOpened = true;
-    document.querySelectorAll(".fc_project_switcher")[0].onclick = function () {
+    document.querySelector(".fc_project_switcher").onclick = function () {
         if (switcherNotOpened) {
             // check if switcher is opened to prevent color re-setting
             if (MODE === "FPPC" || MODE === "FPSC") {
-                let sideProjects = document.querySelectorAll(".f_favorite");
+                const sideProjects = document.querySelectorAll(".f_favorite");
 
                 for (let z = 0; z < sideProjects.length; z++) {
-                    let sideProject = sideProjects[z].querySelectorAll(
-                        ".fc_project_item"
-                    )[0];
+                    const sideProject = sideProjects[z].querySelector(".fc_project_item");
 
                     switchSidebarColor(sideProject);
                 }
             } else {
-                let sideProjects = document.querySelectorAll(".fc_project_item");
+                const sideProjects = document.querySelectorAll(".fc_project_item");
 
                 for (let z = 0; z < sideProjects.length; z++) {
-                    let sideProject = sideProjects[z];
+                    const sideProject = sideProjects[z];
 
                     switchSidebarColor(sideProject);
                 }
@@ -310,9 +301,9 @@
     function isKeyMatch(key, name, description) {
         let matchBool;
 
-        let matchNameBool = name.indexOf(key.toLowerCase()) !== -1;
-        let matchDescBool = description.indexOf(key.toLowerCase()) !== -1;
-        let matchNameDescBool = matchNameBool || matchDescBool;
+        const matchNameBool = name.indexOf(key.toLowerCase()) !== -1;
+        const matchDescBool = description.indexOf(key.toLowerCase()) !== -1;
+        const matchNameDescBool = matchNameBool || matchDescBool;
 
         if (MTPN_CHECKED && MTPD_CHECKED) {
             matchBool = matchNameDescBool;
@@ -331,19 +322,19 @@
         switch (MODE) {
             case "APPC":
             case "FPPC":
-                color = sideProject.querySelectorAll(".color")[0].style.backgroundColor;
+                color = sideProject.querySelector(".color").style.backgroundColor;
                 break;
             case "FPSC":
                 color = hexToRgb(fpscConfig.get("custom_color"));
                 break;
             case "MTP": {
-                let keywords = mtConfig.get("keywords");
+                const keywords = mtConfig.get("keywords");
 
-                let name = sideProject
-                    .querySelectorAll(".name")[0]
+                const name = sideProject
+                    .querySelector(".name")
                     .textContent.toLowerCase();
-                let description = sideProject
-                    .querySelectorAll(".fc_description")[0]
+                const description = sideProject
+                    .querySelector(".fc_description")
                     .textContent.toLowerCase();
 
                 for (let key in keywords) {
@@ -360,22 +351,22 @@
         }
 
         if (color) {
-            let colorIsLight = isLight(color);
+            const colorIsLight = isLight(color);
 
-            let name = sideProject.querySelectorAll(".name")[0];
-            let desc = sideProject.querySelectorAll(".fc_description")[0];
+            const name = sideProject.querySelector(".name");
+            const desc = sideProject.querySelector(".fc_description");
 
-            let fcApps = sideProject.querySelectorAll(".fc_app");
+            const fcApps = sideProject.querySelectorAll(".fc_app");
 
-            inverseColor(name, colorIsLight);
+            invertColor(name, colorIsLight);
 
             if (desc) {
-                inverseColor(desc, colorIsLight);
+                invertColor(desc, colorIsLight);
             }
 
             // make buttons dark
             for (let x = 0; x < fcApps.length; x++) {
-                let btns = fcApps[x].querySelectorAll(".btn");
+                const btns = fcApps[x].querySelectorAll(".btn");
 
                 for (let y = 0; y < btns.length; y++) {
                     btns[y].style.color = "black";
@@ -397,18 +388,18 @@
         switch (MODE) {
             case "FPPC":
             case "APPC":
-                color = pBlock.querySelectorAll(".card_color")[0].style.backgroundColor;
+                color = pBlock.querySelector(".card_color").style.backgroundColor;
                 break;
             case "FPSC":
                 color = hexToRgb(fpscConfig.get("custom_color"));
                 break;
             case "MTP": {
-                let keywords = mtConfig.get("keywords");
-                let name = pBlock
-                    .querySelectorAll(".project_name")[0]
+                const keywords = mtConfig.get("keywords");
+                const name = pBlock
+                    .querySelector(".project_name")
                     .textContent.toLowerCase();
-                let description = pBlock
-                    .querySelectorAll(".project_desc")[0]
+                const description = pBlock
+                    .querySelector(".project_desc")
                     .textContent.toLowerCase();
 
                 for (let key in keywords) {
@@ -428,11 +419,11 @@
             colorIsLight = isLight(color);
             opColor = `${color.substring(0, color.length - 1)}, ${OPACITY})`;
 
-            let desc = pBlock.querySelectorAll(".project_desc")[0];
-            let noDesc = pBlock.querySelectorAll(".no_description")[0];
-            const cogImage = pBlock.querySelectorAll(".cog_image")[0];
+            const desc = pBlock.querySelector(".project_desc");
+            const noDesc = pBlock.querySelector(".no_description");
+            const cogImage = pBlock.querySelector(".cog_image");
 
-            let name = pBlock.querySelectorAll(".project_name")[0];
+            const name = pBlock.querySelector(".project_name");
 
             if (pBlock.style.background) {
                 pBlock.removeAttribute("style");
@@ -440,12 +431,12 @@
                 pBlock.style.background = opColor;
             }
 
-            inverseColor(name, colorIsLight);
+            invertColor(name, colorIsLight);
 
             if (noDesc) {
-                inverseColor(noDesc, colorIsLight);
+                invertColor(noDesc, colorIsLight);
             } else {
-                inverseColor(desc, colorIsLight);
+                invertColor(desc, colorIsLight);
             }
 
             if (cogImage.style.color) {
@@ -472,7 +463,7 @@
         return hsp > 127.5;
     }
 
-    function inverseColor(element, light) {
+    function invertColor(element, light) {
         if (element.style.color) {
             element.removeAttribute("style");
         } else {
@@ -481,7 +472,7 @@
     }
 
     function hexToRgb(hex) {
-        var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
         return result
             ? `rgb(${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(
                 result[3],
