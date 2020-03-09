@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp custom image background
 // @namespace    http://freedcamp.com/
-// @version      0.8
+// @version      0.9
 // @description  set project background image
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
@@ -198,7 +198,7 @@
                 type: "checkbox",
                 default: false
             },
-            dashboard_background: {
+            dashboards_background: {
                 type: "custom",
                 html:
                     "<input type='text' placeholder='url' style='width: 30em;'/>" +
@@ -291,7 +291,7 @@
                         .querySelector("[data-unique]")
                         .getAttribute("data-unique");
 
-                    if (cpbUrls[pName].enabled) {
+                    if (pName in cpbUrls && cpbUrls[pName].enabled) {
                         const cpbUrl = cpbUrls[pName].url;
 
                         testImage(cpbUrl, `Project ${pName}`).then(success => {
@@ -321,7 +321,7 @@
                 });
             }
 
-            const dbParams = imageSelectConfig.get("dashboard_background");
+            const dbParams = imageSelectConfig.get("dashboards_background");
             const dbUrl = dbParams.url;
             const dbEnabled = dbParams.enabled;
             const dbFontColor = dbParams.font_inverted ? "black" : "white";
