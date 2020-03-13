@@ -12,7 +12,7 @@ Allows to set custom colors of project cards on Projects Board and project picke
 
 Allows to replace background of project pages and global boards with custom images via URL.
 
-Documentation - coming soon.
+[Documentation](https://blog.freedcamp.com/2020/03/13/custom-image-background-a-new-browser-extension)
 
 # Additional information
 
