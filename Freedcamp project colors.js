@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp project colors
 // @namespace    http://freedcamp.com/
-// @version      0.16
+// @version      0.17
 // @description  enable project cards background color
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
@@ -25,16 +25,16 @@
             highlight: {
                 type: "custom",
                 html:
-                    "<input type='radio' name='mode' id='fppc'/>" +
-                    "<label for='fppc'> Favorite projects with a project color</label><br>" +
-                    "<input type='radio' name='mode' id='fpsc'/>" +
-                    "<label for='fpsc'> Favorite projects by a set color</label><br>" +
-                    "<input type='radio' name='mode' id='appc'/>" +
-                    "<label for='appc'> All projects with a project color</label><br>" +
-                    "<input type='radio' name='mode' id='mtp'/>" +
-                    "<label for='mtp'> Matching the text in a project </label>" +
-                    "<input type='checkbox' id='mtpn'>name </input>" +
-                    "<input type='checkbox' id='mtpd'>description</input>",
+                "<input type='radio' name='mode' id='fppc'/>" +
+                "<label for='fppc'> Favorite projects with a project color</label><br>" +
+                "<input type='radio' name='mode' id='fpsc'/>" +
+                "<label for='fpsc'> Favorite projects by a set color</label><br>" +
+                "<input type='radio' name='mode' id='appc'/>" +
+                "<label for='appc'> All projects with a project color</label><br>" +
+                "<input type='radio' name='mode' id='mtp'/>" +
+                "<label for='mtp'> Matching the text in a project </label>" +
+                "<input type='checkbox' id='mtpn'>name </input>" +
+                "<input type='checkbox' id='mtpd'>description</input>",
                 set: function (value, parent) {
                     const modeSelected = `#${value[0]}`.toLowerCase();
 
@@ -44,8 +44,8 @@
                 },
                 get: function (parent) {
                     const modeSelected = parent
-                        .querySelector('input[name="mode"]:checked')
-                        .id.toUpperCase();
+                    .querySelector('input[name="mode"]:checked')
+                    .id.toUpperCase();
                     const mtpdChecked = parent.querySelector("#mtpd").checked;
                     let mtpnChecked = parent.querySelector("#mtpn").checked;
 
@@ -56,12 +56,12 @@
 
                     return [modeSelected, mtpnChecked, mtpdChecked];
                 },
-                default: ["fppc", true, true]
-            }
+                default: ["fppc", true, true],
+            },
         },
         onSave: function (values) {
             location.reload();
-        }
+        },
     });
 
     const colorOpacityConfig = new MonkeyConfig({
@@ -70,20 +70,19 @@
         params: {
             opacity: {
                 type: "custom",
-                html:
-                    "<input type='range' min='10' max='100' value='100'/>",
+                html: "<input type='range' min='10' max='100' value='100'/>",
                 set: function (value, parent) {
                     parent.querySelector("input").value = value;
                 },
                 get: function (parent) {
                     return parent.querySelector("input").value;
                 },
-                default: "50"
-            }
+                default: "50",
+            },
         },
         onSave: function (values) {
             location.reload();
-        }
+        },
     });
 
     const MODE = modeSelectConfig.get("highlight")[0];
@@ -112,13 +111,13 @@
         }
 
         const buttonStyle =
-            "display:inline-block;" +
-            "border-radius: 2px;" +
-            "background-color: #4CAF50;" +
-            "color: white;" +
-            "padding: 1em;" +
-            "margin-top: 0.5em;" +
-            "width: 15.5em;";
+              "display:inline-block;" +
+              "border-radius: 2px;" +
+              "background-color: #4CAF50;" +
+              "color: white;" +
+              "padding: 1em;" +
+              "margin-top: 0.5em;" +
+              "width: 15.5em;";
 
         html += `<button id='addButton' style='${buttonStyle}'>Add +1 keyword</button>`;
 
@@ -152,12 +151,12 @@
                             return value.replace(HEX_REGEX, "$2");
                         }
                     },
-                    default: "#00ff00"
-                }
+                    default: "#00ff00",
+                },
             },
             onSave: function (values) {
                 location.reload();
-            }
+            },
         });
     } else if (MODE === "MTP") {
         mtConfig = new MonkeyConfig({
@@ -171,7 +170,7 @@
                         parent.innerHTML = mtpGenerateKeyFields(value);
 
                         const iframe = document.getElementById("__MonkeyConfig_frame")
-                            .contentWindow.document;
+                        .contentWindow.document;
                         const configContainer = iframe.querySelector(
                             ".__MonkeyConfig_container"
                         );
@@ -186,13 +185,13 @@
                             const button = parent.querySelector("#addButton");
                             parent.removeChild(button);
                             const newField =
-                                "<input type='text' style='width: 10em;'/>  " +
-                                "<input type='color' style='width: 5em;'/></br>";
+                                  "<input type='text' style='width: 10em;'/>  " +
+                                  "<input type='color' style='width: 5em;'/></br>";
 
                             parent.insertAdjacentHTML("beforeend", newField);
 
                             const oldHeight = document.getElementById("__MonkeyConfig_frame")
-                                .offsetHeight;
+                            .offsetHeight;
 
                             const newHeight = oldHeight + 23;
 
@@ -238,13 +237,13 @@
                         return result;
                     },
                     default: {
-                        keyword1: "#00ff00"
-                    }
-                }
+                        keyword1: "#00ff00",
+                    },
+                },
             },
             onSave: function (values) {
                 location.reload();
-            }
+            },
         });
     }
 
@@ -273,29 +272,66 @@
 
     // sidebar
     let switcherNotOpened = true;
-    document.querySelector(".fc_project_switcher").onclick = function () {
+    const oldProjectSwitcher = document.querySelector(".fc_project_switcher");
+    const newProjectSwitcher = document.querySelector(
+        ".Header--fk-Header-Project"
+    );
+    const isNewProjectSwitcher = !!newProjectSwitcher;
+    const projectSwitcher = oldProjectSwitcher || newProjectSwitcher;
+
+    projectSwitcher.onclick = function () {
         if (switcherNotOpened) {
             // check if switcher is opened to prevent color re-setting
             if (MODE === "FPPC" || MODE === "FPSC") {
-                const sideProjects = document.querySelectorAll(".f_favorite");
+                if (isNewProjectSwitcher) {
+                    // currently not supported
+                } else {
+                    const sideProjects = document.querySelectorAll(".f_favorite");
 
-                for (let z = 0; z < sideProjects.length; z++) {
-                    const sideProject = sideProjects[z].querySelector(".fc_project_item");
+                    for (let z = 0; z < sideProjects.length; z++) {
+                        const sideProject = sideProjects[z].querySelector(
+                            ".fc_project_item"
+                        );
 
-                    switchSidebarColor(sideProject);
+                        switchSidebarColor(sideProject);
+                    }
                 }
             } else {
-                const sideProjects = document.querySelectorAll(".fc_project_item");
+                let sideProjectsClassName;
 
-                for (let z = 0; z < sideProjects.length; z++) {
-                    const sideProject = sideProjects[z];
+                if (isNewProjectSwitcher) {
+                    let projectPickerExist = setInterval(function () {
+                        if (
+                            document.querySelector(".ProjectPicker--fk-ProjectPicker-Opened")
+                        ) {
+                            const sideProjects = document.querySelectorAll(
+                                ".ProjectPicker--fk-ProjectPicker-Project"
+                            );
 
-                    switchSidebarColor(sideProject);
+                            for (let z = 0; z < sideProjects.length; z++) {
+                                const sideProject = sideProjects[z];
+
+                                switchSidebarColor(sideProject, isNewProjectSwitcher);
+                            }
+
+                            clearInterval(projectPickerExist);
+                        }
+                    }, 100);
+                } else {
+                    const sideProjects = document.querySelectorAll(".fc_project_item");
+
+                    for (let z = 0; z < sideProjects.length; z++) {
+                        const sideProject = sideProjects[z];
+
+                        switchSidebarColor(sideProject, isNewProjectSwitcher);
+                    }
                 }
             }
         }
 
-        switcherNotOpened = false;
+        if (isNewProjectSwitcher) {
+            switcherNotOpened = false;
+        }
     };
 
     function isKeyMatch(key, name, description) {
@@ -316,13 +352,17 @@
         return matchBool;
     }
 
-    function switchSidebarColor(sideProject) {
+    function switchSidebarColor(sideProject, isNewProjectSwitcher) {
         let color;
 
         switch (MODE) {
             case "APPC":
             case "FPPC":
-                color = sideProject.querySelector(".color").style.backgroundColor;
+                color = sideProject.querySelector(
+                    isNewProjectSwitcher
+                    ? ".ProjectPicker--fk-ProjectPicker-ProjectColor"
+                    : ".color"
+                ).style.backgroundColor;
                 break;
             case "FPSC":
                 color = hexToRgb(fpscConfig.get("custom_color"));
@@ -331,11 +371,19 @@
                 const keywords = mtConfig.get("keywords");
 
                 const name = sideProject
-                    .querySelector(".name")
-                    .textContent.toLowerCase();
+                .querySelector(
+                    isNewProjectSwitcher
+                    ? ".ProjectPicker--fk-ProjectPicker-ProjectName"
+                    : ".name"
+                )
+                .textContent.toLowerCase();
                 const description = sideProject
-                    .querySelector(".fc_description")
-                    .textContent.toLowerCase();
+                .querySelector(
+                    isNewProjectSwitcher
+                    ? ".ProjectPicker--fk-ProjectPicker-ProjectDescription"
+                    : ".fc_description"
+                )
+                .textContent.toLowerCase();
 
                 for (let key in keywords) {
                     if (isKeyMatch(key, name, description)) {
@@ -353,10 +401,22 @@
         if (color) {
             const colorIsLight = isLight(color);
 
-            const name = sideProject.querySelector(".name");
-            const desc = sideProject.querySelector(".fc_description");
+            const name = sideProject.querySelector(
+                isNewProjectSwitcher
+                ? ".ProjectPicker--fk-ProjectPicker-ProjectName"
+                : ".name"
+            );
+            const desc = sideProject.querySelector(
+                isNewProjectSwitcher
+                ? ".ProjectPicker--fk-ProjectPicker-ProjectDescription"
+                : ".fc_description"
+            );
 
-            const fcApps = sideProject.querySelectorAll(".fc_app");
+            const fcApps = sideProject.querySelectorAll(
+                isNewProjectSwitcher
+                ? ".ProjectPicker--fk-ProjectPicker-ProjectApplications"
+                : ".fc_app"
+            );
 
             invertColor(name, colorIsLight);
 
@@ -396,11 +456,11 @@
             case "MTP": {
                 const keywords = mtConfig.get("keywords");
                 const name = pBlock
-                    .querySelector(".project_name")
-                    .textContent.toLowerCase();
+                .querySelector(".project_name")
+                .textContent.toLowerCase();
                 const description = pBlock
-                    .querySelector(".project_desc")
-                    .textContent.toLowerCase();
+                .querySelector(".project_desc")
+                .textContent.toLowerCase();
 
                 for (let key in keywords) {
                     if (isKeyMatch(key, name, description)) {
@@ -475,9 +535,9 @@
         const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
         return result
             ? `rgb(${parseInt(result[1], 16)}, ${parseInt(result[2], 16)}, ${parseInt(
-                result[3],
-                16
-            )})`
-            : null;
+            result[3],
+            16
+        )})`
+        : null;
     }
 })();
