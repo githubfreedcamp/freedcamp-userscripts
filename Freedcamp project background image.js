@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp custom image background
 // @namespace    http://freedcamp.com/
-// @version      1.03
+// @version      1.04
 // @description  set project background image
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
@@ -115,7 +115,7 @@
     }
 
     function setProjectCardFontColor(
-    element,
+     element,
      fontInverted,
      marginLeftPx,
      shadowPx
@@ -220,7 +220,7 @@
                                 grandParent.parentNode.removeChild(grandParent);
                                 grandGrandParent.insertAdjacentHTML(
                                     "afterbegin",
-                                    "<tr><td style='display:block; width:0px;'><div style=" +
+                                    "<tr><td style='display:block; width:0;'><div style=" +
                                     "'font-size:14px; color:red;'>" +
                                     "Open a project page to select a custom background.</div></td></tr>"
                                 );
@@ -462,7 +462,7 @@
 
     function switchDashboardPages() {
         let match = window.location.href.match(
-            /.+\/(dashboard|dashboard\/home|dashboard\/calendar|dashboard\/tasks|dashboard\/calendar|dashboard\/widgets|dashboard\/reports)\/?$/
+            /.+\/(dashboard|dashboard\/home|dashboard\/tasks|dashboard\/calendar|dashboard\/widgets|dashboard\/reports)\/?$/
         );
         if (match) {
             const page = match[match.length - 1];
@@ -535,8 +535,8 @@
 
         pBlocks.forEach(pBlock => {
             const pName = pBlock
-            .querySelector("[data-unique]")
-            .getAttribute("data-unique");
+            .querySelector(".favorite_project_action")
+            .getAttribute("data-id");
 
             if (pName in cpbUrls && cpbUrls[pName].enabled) {
                 switchDashboardCPBProjectCard(pBlock, pName, cpbUrls);
@@ -682,12 +682,12 @@
     }
 
     function createReportsInterval(
-    selector,
+     selector,
      dbFontColor,
      dbShadowColor,
      customRadius = 3
     ) {
-        const inverval = setInterval(function() {
+        const interval = setInterval(function() {
             const el = document.querySelector(selector);
             if (el) {
                 const reportText = el.style;
@@ -695,7 +695,7 @@
                 reportText.color = dbFontColor;
                 reportText.textShadow = `${dbShadowColor} 0px 1px ${customRadius}px`;
 
-                clearInterval(inverval);
+                clearInterval(interval);
             }
         }, 100);
     }
