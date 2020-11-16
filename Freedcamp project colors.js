@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp project colors
 // @namespace    http://freedcamp.com/
-// @version      0.17
+// @version      0.18
 // @description  enable project cards background color
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
@@ -280,11 +280,25 @@
     const projectSwitcher = oldProjectSwitcher || newProjectSwitcher;
 
     projectSwitcher.onclick = function () {
-        if (switcherNotOpened) {
+        if (switcherNotOpened || isNewProjectSwitcher) {
             // check if switcher is opened to prevent color re-setting
             if (MODE === "FPPC" || MODE === "FPSC") {
                 if (isNewProjectSwitcher) {
-                    // currently not supported
+                    let projectPickerExist = setInterval(function () {
+                        if (
+                            document.querySelector(".ProjectPicker--fk-ProjectPicker-Opened")
+                        ) {
+                            clearInterval(projectPickerExist);
+
+                            const sideProjects = document.querySelectorAll(".f_favorite");
+
+                            for (let z = 0; z < sideProjects.length; z++) {
+                                const sideProject = sideProjects[z];
+
+                                switchSidebarColor(sideProject, isNewProjectSwitcher);
+                            }
+                        }
+                    }, 100);
                 } else {
                     const sideProjects = document.querySelectorAll(".f_favorite");
 
@@ -304,6 +318,8 @@
                         if (
                             document.querySelector(".ProjectPicker--fk-ProjectPicker-Opened")
                         ) {
+                            clearInterval(projectPickerExist);
+
                             const sideProjects = document.querySelectorAll(
                                 ".ProjectPicker--fk-ProjectPicker-Project"
                             );
@@ -313,8 +329,6 @@
 
                                 switchSidebarColor(sideProject, isNewProjectSwitcher);
                             }
-
-                            clearInterval(projectPickerExist);
                         }
                     }, 100);
                 } else {
@@ -329,9 +343,7 @@
             }
         }
 
-        if (isNewProjectSwitcher) {
-            switcherNotOpened = false;
-        }
+        isNewProjectSwitcher = false;
     };
 
     function isKeyMatch(key, name, description) {
