@@ -186,7 +186,10 @@
                                 link.addEventListener("click", function() {
                                     if (isOldUI) {
                                         if (project_unique_name in cbKeys) {
-                                            input[0].value = cbKeys[project_unique_name].url;
+                                            const oldProject = cbKeys[project_unique_name];
+                                            input[0].value = oldProject.url;
+                                            input[1].checked = oldProject.enabled || false;
+                                            input[2].checked = oldProject.font_inverted || false;
                                         } else {
                                             openText();
                                         }
