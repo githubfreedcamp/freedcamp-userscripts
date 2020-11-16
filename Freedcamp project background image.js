@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp custom image background
 // @namespace    http://freedcamp.com/
-// @version      1.02
+// @version      1.03
 // @description  set project background image
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
@@ -15,11 +15,6 @@
 
 (function() {
     "use strict";
-
-    const newProjectSwitcher = document.querySelector(
-        ".Header--fk-Header-Project"
-    );
-    const isNewUI = !!newProjectSwitcher;
 
     let cbKeys = {};
 
@@ -134,7 +129,11 @@
 
     let imageSelectConfig;
 
-    function createMonkeyConfig(projectName) {
+    run();
+
+    window.addEventListener("popstate", () => run());
+
+    function createMonkeyConfig(projectName, isOldUI) {
         return new MonkeyConfig({
             title: "Config",
             menuCommand: true,
@@ -146,12 +145,59 @@
                     "</br><input type='checkbox' id='enable_cpb'/>" +
                     "<label for='enable_cpb'> Enable </label>" +
                     "<input type='checkbox' id='invert_cpb'/>" +
-                    "<label for='invert_cpb'> Invert font color</label>"
+                    "<label for='invert_cpb'> Invert font color</label>" +
+                    "<div><div id='delete_background' hidden><input type='checkbox' id='db_check'/>" +
+                    "<label for='db_check'> Delete background from previous version</label></div></div>" +
+                    "<a href='javascript:void(0);' id='download_old_config' style='margin-left:3px' hidden>Restore background(s) from previous version</a>"
                     : "",
                     set: function(value, parent) {
                         cbKeys = Object.keys(value).length !== 0 ? value : cbKeys;
 
                         if (projectName) {
+                            let oldConfig = "";
+
+                            for (let key in cbKeys) {
+                                if (isNaN(key)) {
+                                    const val = cbKeys[key];
+                                    if ("url" in val && val.url) {
+                                        oldConfig += `</br><a href="${val.url}" target="_blank">${key}</a>`;
+                                    }
+                                }
+                            }
+
+                            const link = parent.querySelector("#download_old_config");
+
+                            if (isOldUI) {
+                                if (project_unique_name in cbKeys) {
+                                    parent
+                                        .querySelector("#delete_background")
+                                        .removeAttribute("hidden");
+                                }
+                            }
+
+                            const openText = () => {
+                                let newWindow = window.open();
+                                newWindow.document.write(
+                                    "IMAGES FROM PREVIOUS VERSION" + oldConfig
+                                );
+                            };
+
+                            if (oldConfig) {
+                                link.addEventListener("click", function() {
+                                    if (isOldUI) {
+                                        if (project_unique_name in cbKeys) {
+                                            input[0].value = cbKeys[project_unique_name].url;
+                                        } else {
+                                            openText();
+                                        }
+                                    } else {
+                                        openText();
+                                    }
+                                });
+
+                                link.removeAttribute("hidden");
+                            }
+
                             const input = parent.querySelectorAll("input");
 
                             if (Object.keys(value).length === 0) {
@@ -159,7 +205,7 @@
                                 input[0].value = "";
                                 input[1].checked = false;
                                 input[2].checked = false;
-                            } else if (value[projectName]) {
+                            } else if (projectName in value) {
                                 input[0].value = value[projectName].url || "";
                                 input[1].checked = value[projectName].enabled || false;
                                 input[2].checked = value[projectName].font_inverted || false;
@@ -181,6 +227,10 @@
                     get: function(parent) {
                         if (projectName) {
                             const input = parent.querySelectorAll("input");
+
+                            if (input[3].checked) {
+                                delete cbKeys[project_unique_name];
+                            }
 
                             cbKeys[projectName] = {
                                 url: input[0].value,
@@ -252,37 +302,38 @@
         });
     }
 
-    run();
-
-    window.addEventListener("popstate", () => run());
-
     function run() {
-        let projectHeader =
-            document.querySelector(".Header--fk-Header-ProjectName") ||
-            document.querySelector("#project_name");
-        let projectName =
-            projectHeader && projectHeader.innerText.trim() !== "Choose Project"
-        ? projectHeader.innerText
-        : "";
-        // let projectname = project_unique_name;
+        const isNewUI = typeof project_unique_name === "undefined";
 
-        imageSelectConfig = createMonkeyConfig(projectName);
+        let projectName;
+        let projectHeader = isNewUI
+        ? document.querySelector(".Header--fk-Header-ProjectName")
+        : document.querySelector("#project_name");
 
-        const newProjectSwitcher = document.querySelector(
-            ".Header--fk-Header-Project"
-        );
-        const isNPS = !!newProjectSwitcher;
+        if (isNewUI) {
+            const viewMatch = window.location.pathname.match(/view\/([0-9]+)/);
+            if (viewMatch) {
+                projectName = viewMatch[1];
+            }
 
-        if (isNPS) {
             setOnNewSideProjectsClick();
 
             setOnNewPickerClick();
+        } else {
+            try {
+                const projectId = fc.project_id.toString();
+                if (projectId !== "0") {
+                    projectName = projectId;
+                }
+            } catch (e) {}
         }
+
+        imageSelectConfig = createMonkeyConfig(projectName, !isNewUI);
 
         if (projectName) {
             setOnAppClick();
 
-            setProject(projectName, isNPS);
+            setProject(projectName, isNewUI);
         } else {
             switchDashboardPages();
         }
@@ -343,7 +394,7 @@
         }
     }
 
-    function setProject(projectName, isNPS) {
+    function setProject(projectName, isNewUI) {
         const cbConfig = imageSelectConfig.get("custom_project_background")[
             projectName
         ];
@@ -361,7 +412,7 @@
                 }
             });
 
-            if (!isNPS) {
+            if (!isNewUI) {
                 tryToSetSpans(cbFontColor, cbpShadowColor);
             }
         } else {
@@ -381,7 +432,7 @@
 
                 tryToSetFolderIcon(dbpFontColor);
 
-                if (!isNPS) {
+                if (!isNewUI) {
                     tryToSetSpans(dbpFontColor, dbpShadowColor);
                 }
             }
@@ -485,8 +536,7 @@
             .getAttribute("data-unique");
 
             if (pName in cpbUrls && cpbUrls[pName].enabled) {
-                console.log(pName);
-                switchDashboardCPBProjectCard(pBlock, pName, cpbUrls)
+                switchDashboardCPBProjectCard(pBlock, pName, cpbUrls);
             } else if (dpbEnabled) {
                 // check default background url only once
                 if (!dpbUrlChecked) {
@@ -554,9 +604,7 @@
         for (let i = 0; i < headers.length; i++) {
             const header = headers[i];
             const svgs = header.querySelectorAll("svg");
-            const texts = header.querySelectorAll(
-                ".Button--fk-Button-Text"
-            );
+            const texts = header.querySelectorAll(".Button--fk-Button-Text");
 
             for (let x = 0; x < svgs.length; x++) {
                 svgs[x].style.color = dbFontColor;
@@ -564,9 +612,7 @@
 
             for (let x = 0; x < texts.length; x++) {
                 texts[x].style.color = dbFontColor;
-                texts[
-                    x
-                ].style.textShadow = `${dbShadowColor} 0px 1px 8px`;
+                texts[x].style.textShadow = `${dbShadowColor} 0px 1px 8px`;
             }
         }
     }
@@ -586,23 +632,18 @@
             subheader.style.textShadow = `${dbShadowColor} 0px 1px 14px`;
         });
 
-        const greeting = document.querySelector(".greeting.left")
-        .style;
+        const greeting = document.querySelector(".greeting.left").style;
         greeting.color = dbFontColor;
         greeting.textShadow = `${dbShadowColor} 0px 1px 18px`;
     }
 
     function switchDashboardTasks(dbFontColor, dbShadowColor) {
-        const header = document.querySelector(
-            ".AppHeader--fk-AppHeader.noprint"
-        );
+        const header = document.querySelector(".AppHeader--fk-AppHeader.noprint");
 
         if (header) {
             const svgs = header.querySelectorAll("svg");
             const is = header.querySelectorAll("i");
-            const texts = header.querySelectorAll(
-                ".Button--fk-Button-Text"
-            );
+            const texts = header.querySelectorAll(".Button--fk-Button-Text");
 
             for (let x = 0; x < svgs.length; x++) {
                 svgs[x].style.color = dbFontColor;
@@ -614,25 +655,20 @@
 
             for (let x = 0; x < texts.length; x++) {
                 texts[x].style.color = dbFontColor;
-                texts[
-                    x
-                ].style.textShadow = `${dbShadowColor} 0px 1px 8px`;
+                texts[x].style.textShadow = `${dbShadowColor} 0px 1px 8px`;
             }
         }
     }
 
     function switchDashBoardCalendar(dbFontColor, dbShadowColor) {
-        const filterLabel = document.querySelector(".filter_label")
-        .style;
+        const filterLabel = document.querySelector(".filter_label").style;
 
         filterLabel.color = dbFontColor;
         filterLabel.textShadow = `${dbShadowColor} 0px 1px 8px`;
     }
 
     function switchDashboardWidgets(dbFontColor) {
-        document.querySelector(
-            ".no_entries.no_widgets"
-        ).style.color = dbFontColor;
+        document.querySelector(".no_entries.no_widgets").style.color = dbFontColor;
     }
 
     function switchDashboardReports(dbFontColor, dbShadowColor) {
@@ -642,7 +678,12 @@
         createReportsInterval("#report_created_by", dbFontColor, dbShadowColor);
     }
 
-    function createReportsInterval(selector, dbFontColor, dbShadowColor, customRadius = 3) {
+    function createReportsInterval(
+    selector,
+     dbFontColor,
+     dbShadowColor,
+     customRadius = 3
+    ) {
         const inverval = setInterval(function() {
             const el = document.querySelector(selector);
             if (el) {
