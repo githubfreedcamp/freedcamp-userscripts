@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp custom image background
 // @namespace    http://freedcamp.com/
-// @version      1.01
+// @version      1.02
 // @description  set project background image
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
@@ -301,7 +301,7 @@
                     const sideProject = sideProjects[z];
 
                     sideProject.addEventListener("click", function() {
-                        setTimeout(() => run(), 100);
+                        setTimeout(() => run(), 0);
                     });
                 }
             }
@@ -319,7 +319,7 @@
                 const a = boardHeaderButtons[i].querySelector("a");
                 if (a && a.href !== window.location.href) {
                     a.addEventListener("click", function() {
-                        setTimeout(() => run(), 100);
+                        setTimeout(() => run(), 0);
                     });
                 }
             }
@@ -336,7 +336,7 @@
 
                 if (a && a.href !== window.location.href) {
                     a.addEventListener("click", function() {
-                        setTimeout(() => run(), 100);
+                        setTimeout(() => run(), 0);
                     });
                 }
             }
@@ -636,20 +636,20 @@
     }
 
     function switchDashboardReports(dbFontColor, dbShadowColor) {
-        createReportsInterval("#report_text", dbFontColor, dbShadowColor);
+        createReportsInterval("#report_text", dbFontColor, dbShadowColor, 18);
         createReportsInterval("#report_name_and_date", dbFontColor, dbShadowColor);
         createReportsInterval(".fg-slate", dbFontColor, dbShadowColor);
         createReportsInterval("#report_created_by", dbFontColor, dbShadowColor);
     }
 
-    function createReportsInterval(selector, dbFontColor, dbShadowColor) {
+    function createReportsInterval(selector, dbFontColor, dbShadowColor, customRadius = 3) {
         const inverval = setInterval(function() {
             const el = document.querySelector(selector);
             if (el) {
                 const reportText = el.style;
 
                 reportText.color = dbFontColor;
-                reportText.textShadow = `${dbShadowColor} 0px 1px 18px`;
+                reportText.textShadow = `${dbShadowColor} 0px 1px ${customRadius}px`;
 
                 clearInterval(inverval);
             }
