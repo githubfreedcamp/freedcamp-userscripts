@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp project colors
 // @namespace    http://freedcamp.com/
-// @version      0.18
+// @version      1.01
 // @description  enable project cards background color
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
@@ -13,7 +13,7 @@
 // @grant        GM_registerMenuCommand
 
 // ==/UserScript==
-(function () {
+(function() {
     "use strict";
 
     let mtConfig, fpscConfig;
@@ -35,14 +35,14 @@
                 "<label for='mtp'> Matching the text in a project </label>" +
                 "<input type='checkbox' id='mtpn'>name </input>" +
                 "<input type='checkbox' id='mtpd'>description</input>",
-                set: function (value, parent) {
+                set: function(value, parent) {
                     const modeSelected = `#${value[0]}`.toLowerCase();
 
                     parent.querySelector(modeSelected).checked = true;
                     parent.querySelector("#mtpn").checked = value[1];
                     parent.querySelector("#mtpd").checked = value[2];
                 },
-                get: function (parent) {
+                get: function(parent) {
                     const modeSelected = parent
                     .querySelector('input[name="mode"]:checked')
                     .id.toUpperCase();
@@ -56,12 +56,12 @@
 
                     return [modeSelected, mtpnChecked, mtpdChecked];
                 },
-                default: ["fppc", true, true],
-            },
+                default: ["fppc", true, true]
+            }
         },
-        onSave: function (values) {
+        onSave: function(values) {
             location.reload();
-        },
+        }
     });
 
     const colorOpacityConfig = new MonkeyConfig({
@@ -71,18 +71,18 @@
             opacity: {
                 type: "custom",
                 html: "<input type='range' min='10' max='100' value='100'/>",
-                set: function (value, parent) {
+                set: function(value, parent) {
                     parent.querySelector("input").value = value;
                 },
-                get: function (parent) {
+                get: function(parent) {
                     return parent.querySelector("input").value;
                 },
-                default: "50",
-            },
+                default: "50"
+            }
         },
-        onSave: function (values) {
+        onSave: function(values) {
             location.reload();
-        },
+        }
     });
 
     const MODE = modeSelectConfig.get("highlight")[0];
@@ -139,10 +139,10 @@
                 custom_color: {
                     type: "custom",
                     html: "<input type='color' style='width: 5em;'/>",
-                    set: function (value, parent) {
+                    set: function(value, parent) {
                         parent.querySelector("input").value = value;
                     },
-                    get: function (parent) {
+                    get: function(parent) {
                         const value = parent.querySelector("input").value;
                         if (!value.match(HEX_REGEX)) {
                             alert("Wrong HEX color! Restored default.");
@@ -151,12 +151,12 @@
                             return value.replace(HEX_REGEX, "$2");
                         }
                     },
-                    default: "#00ff00",
-                },
+                    default: "#00ff00"
+                }
             },
-            onSave: function (values) {
+            onSave: function(values) {
                 location.reload();
-            },
+            }
         });
     } else if (MODE === "MTP") {
         mtConfig = new MonkeyConfig({
@@ -166,7 +166,7 @@
                 keywords: {
                     type: "custom",
                     html: "",
-                    set: function (value, parent) {
+                    set: function(value, parent) {
                         parent.innerHTML = mtpGenerateKeyFields(value);
 
                         const iframe = document.getElementById("__MonkeyConfig_frame")
@@ -181,7 +181,7 @@
 
                         let isStyleSet = false;
 
-                        parent.querySelector("#addButton").onclick = function () {
+                        parent.querySelector("#addButton").onclick = function() {
                             const button = parent.querySelector("#addButton");
                             parent.removeChild(button);
                             const newField =
@@ -220,7 +220,7 @@
                             parent.querySelectorAll("input")[i].value = "";
                         }
                     },
-                    get: function (parent) {
+                    get: function(parent) {
                         let result = {};
 
                         const inputs = parent.querySelectorAll("input");
@@ -237,13 +237,13 @@
                         return result;
                     },
                     default: {
-                        keyword1: "#00ff00",
-                    },
-                },
+                        keyword1: "#00ff00"
+                    }
+                }
             },
-            onSave: function (values) {
+            onSave: function(values) {
                 location.reload();
-            },
+            }
         });
     }
 
@@ -259,7 +259,7 @@
 
                 projects[i].querySelector(
                     ".favorite_project_action"
-                ).onclick = function () {
+                ).onclick = function() {
                     switchDashboardColor(projects[i]);
                 };
             }
@@ -279,12 +279,12 @@
     const isNewProjectSwitcher = !!newProjectSwitcher;
     const projectSwitcher = oldProjectSwitcher || newProjectSwitcher;
 
-    projectSwitcher.onclick = function () {
+    projectSwitcher.onclick = function() {
         if (switcherNotOpened || isNewProjectSwitcher) {
             // check if switcher is opened to prevent color re-setting
             if (MODE === "FPPC" || MODE === "FPSC") {
                 if (isNewProjectSwitcher) {
-                    let projectPickerExist = setInterval(function () {
+                    let projectPickerExist = setInterval(function() {
                         if (
                             document.querySelector(".ProjectPicker--fk-ProjectPicker-Opened")
                         ) {
@@ -314,7 +314,7 @@
                 let sideProjectsClassName;
 
                 if (isNewProjectSwitcher) {
-                    let projectPickerExist = setInterval(function () {
+                    let projectPickerExist = setInterval(function() {
                         if (
                             document.querySelector(".ProjectPicker--fk-ProjectPicker-Opened")
                         ) {
@@ -343,7 +343,7 @@
             }
         }
 
-        isNewProjectSwitcher = false;
+        switcherNotOpened = false;
     };
 
     function isKeyMatch(key, name, description) {
