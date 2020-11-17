@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp project colors
 // @namespace    http://freedcamp.com/
-// @version      1.01
+// @version      1.02
 // @description  enable project cards background color
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
@@ -276,75 +276,33 @@
     const newProjectSwitcher = document.querySelector(
         ".Header--fk-Header-Project"
     );
-    const isNewProjectSwitcher = !!newProjectSwitcher;
-    const projectSwitcher = oldProjectSwitcher || newProjectSwitcher;
+    const isNewUI = !!newProjectSwitcher;
 
-    projectSwitcher.onclick = function() {
-        if (switcherNotOpened || isNewProjectSwitcher) {
-            // check if switcher is opened to prevent color re-setting
-            if (MODE === "FPPC" || MODE === "FPSC") {
-                if (isNewProjectSwitcher) {
-                    let projectPickerExist = setInterval(function() {
-                        if (
-                            document.querySelector(".ProjectPicker--fk-ProjectPicker-Opened")
-                        ) {
-                            clearInterval(projectPickerExist);
+    if (isNewUI) {
+        window.addEventListener("PROJECT_PICKER_OPENED", () =>
+                                switchSideProjects(isNewUI)
+                               );
+    } else {
+        oldProjectSwitcher.onclick = () => switchSideProjects(isNewUI);
+    }
 
-                            const sideProjects = document.querySelectorAll(".f_favorite");
+    function switchSideProjects(isNewUI) {
+        const sideProjects = document.querySelectorAll(
+            MODE === "FPPC" || MODE === "FPSC"
+            ? isNewUI
+            ? ".f_favorite"
+            : ".f_favorite > .fc_project_item"
+            : isNewUI
+            ? ".ProjectPicker--fk-ProjectPicker-Project"
+            : ".fc_project_item"
+        );
 
-                            for (let z = 0; z < sideProjects.length; z++) {
-                                const sideProject = sideProjects[z];
+        for (let z = 0; z < sideProjects.length; z++) {
+            const sideProject = sideProjects[z];
 
-                                switchSidebarColor(sideProject, isNewProjectSwitcher);
-                            }
-                        }
-                    }, 100);
-                } else {
-                    const sideProjects = document.querySelectorAll(".f_favorite");
-
-                    for (let z = 0; z < sideProjects.length; z++) {
-                        const sideProject = sideProjects[z].querySelector(
-                            ".fc_project_item"
-                        );
-
-                        switchSidebarColor(sideProject);
-                    }
-                }
-            } else {
-                let sideProjectsClassName;
-
-                if (isNewProjectSwitcher) {
-                    let projectPickerExist = setInterval(function() {
-                        if (
-                            document.querySelector(".ProjectPicker--fk-ProjectPicker-Opened")
-                        ) {
-                            clearInterval(projectPickerExist);
-
-                            const sideProjects = document.querySelectorAll(
-                                ".ProjectPicker--fk-ProjectPicker-Project"
-                            );
-
-                            for (let z = 0; z < sideProjects.length; z++) {
-                                const sideProject = sideProjects[z];
-
-                                switchSidebarColor(sideProject, isNewProjectSwitcher);
-                            }
-                        }
-                    }, 100);
-                } else {
-                    const sideProjects = document.querySelectorAll(".fc_project_item");
-
-                    for (let z = 0; z < sideProjects.length; z++) {
-                        const sideProject = sideProjects[z];
-
-                        switchSidebarColor(sideProject, isNewProjectSwitcher);
-                    }
-                }
-            }
+            switchSidebarColor(sideProject, isNewUI);
         }
-
-        switcherNotOpened = false;
-    };
+    }
 
     function isKeyMatch(key, name, description) {
         let matchBool;
@@ -364,16 +322,14 @@
         return matchBool;
     }
 
-    function switchSidebarColor(sideProject, isNewProjectSwitcher) {
+    function switchSidebarColor(sideProject, isNewUI) {
         let color;
 
         switch (MODE) {
             case "APPC":
             case "FPPC":
                 color = sideProject.querySelector(
-                    isNewProjectSwitcher
-                    ? ".ProjectPicker--fk-ProjectPicker-ProjectColor"
-                    : ".color"
+                    isNewUI ? ".ProjectPicker--fk-ProjectPicker-ProjectColor" : ".color"
                 ).style.backgroundColor;
                 break;
             case "FPSC":
@@ -384,14 +340,12 @@
 
                 const name = sideProject
                 .querySelector(
-                    isNewProjectSwitcher
-                    ? ".ProjectPicker--fk-ProjectPicker-ProjectName"
-                    : ".name"
+                    isNewUI ? ".ProjectPicker--fk-ProjectPicker-ProjectName" : ".name"
                 )
                 .textContent.toLowerCase();
                 const description = sideProject
                 .querySelector(
-                    isNewProjectSwitcher
+                    isNewUI
                     ? ".ProjectPicker--fk-ProjectPicker-ProjectDescription"
                     : ".fc_description"
                 )
@@ -414,18 +368,16 @@
             const colorIsLight = isLight(color);
 
             const name = sideProject.querySelector(
-                isNewProjectSwitcher
-                ? ".ProjectPicker--fk-ProjectPicker-ProjectName"
-                : ".name"
+                isNewUI ? ".ProjectPicker--fk-ProjectPicker-ProjectName" : ".name"
             );
             const desc = sideProject.querySelector(
-                isNewProjectSwitcher
+                isNewUI
                 ? ".ProjectPicker--fk-ProjectPicker-ProjectDescription"
                 : ".fc_description"
             );
 
             const fcApps = sideProject.querySelectorAll(
-                isNewProjectSwitcher
+                isNewUI
                 ? ".ProjectPicker--fk-ProjectPicker-ProjectApplications"
                 : ".fc_app"
             );
