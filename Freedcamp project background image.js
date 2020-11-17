@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp custom image background
 // @namespace    http://freedcamp.com/
-// @version      1.04
+// @version      1.05
 // @description  set project background image
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
@@ -128,10 +128,26 @@
     }
 
     let imageSelectConfig;
+    let lastPath;
+    let lastProjectId;
+    let lastAppName;
 
     run();
 
-    window.addEventListener("popstate", () => run());
+    window.addEventListener("PROJECT_PICKER_ROUTE_CHANGE", function() {
+        const paths = window.location.pathname.split("/");
+
+        const isChanged =
+              lastPath === "dashboard"
+        ? paths[2] !== lastAppName
+        : lastPath === "view"
+        ? paths[2] !== lastProjectId || paths[3] !== lastAppName
+        : false;
+
+        if (isChanged) {
+            run();
+        }
+    });
 
     function createMonkeyConfig(projectName, isOldUI) {
         return new MonkeyConfig({
@@ -314,14 +330,17 @@
         : document.querySelector("#project_name");
 
         if (isNewUI) {
-            const viewMatch = window.location.pathname.match(/view\/([0-9]+)/);
-            if (viewMatch) {
-                projectName = viewMatch[1];
+            const paths = window.location.pathname.split("/");
+            lastPath = paths[1];
+
+            if (lastPath === "dashboard") {
+                lastAppName = paths[2];
+            } else if (lastPath === "view") {
+                lastProjectId = paths[2];
+                lastAppName = paths[3];
+
+                projectName = lastProjectId;
             }
-
-            setOnNewSideProjectsClick();
-
-            setOnNewPickerClick();
         } else {
             try {
                 const projectId = fc.project_id.toString();
@@ -334,66 +353,9 @@
         imageSelectConfig = createMonkeyConfig(projectName, !isNewUI);
 
         if (projectName) {
-            setOnAppClick();
-
             setProject(projectName, isNewUI);
         } else {
             switchDashboardPages();
-        }
-    }
-
-    function setOnNewSideProjectsClick() {
-        let projectPickerExist = setInterval(function() {
-            if (document.querySelector(".ProjectPicker--fk-ProjectPicker-Opened")) {
-                clearInterval(projectPickerExist);
-
-                const sideProjects = document.querySelectorAll(
-                    ".ProjectPicker--fk-ProjectPicker-Project"
-                );
-
-                for (let z = 0; z < sideProjects.length; z++) {
-                    const sideProject = sideProjects[z];
-
-                    sideProject.addEventListener("click", function() {
-                        setTimeout(() => run(), 0);
-                    });
-                }
-            }
-        }, 100);
-    }
-
-    function setOnNewPickerClick() {
-        const boardHeader = document.querySelector(".Header--fk-Header-BoardLinks");
-
-        if (boardHeader) {
-            const boardHeaderButtons = boardHeader.querySelectorAll(
-                ".tooltip-trigger"
-            );
-            for (let i = 0; i < boardHeaderButtons.length; i++) {
-                const a = boardHeaderButtons[i].querySelector("a");
-                if (a && a.href !== window.location.href) {
-                    a.addEventListener("click", function() {
-                        setTimeout(() => run(), 0);
-                    });
-                }
-            }
-        }
-    }
-
-    function setOnAppClick() {
-        const apps = document.querySelector(".fc_app_wrap");
-        if (apps) {
-            const links = apps.querySelectorAll("a");
-
-            for (let i = 0; i < links.length; i++) {
-                const a = links[i];
-
-                if (a && a.href !== window.location.href) {
-                    a.addEventListener("click", function() {
-                        setTimeout(() => run(), 0);
-                    });
-                }
-            }
         }
     }
 
