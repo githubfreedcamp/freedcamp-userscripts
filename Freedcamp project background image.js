@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp custom image background
 // @namespace    http://freedcamp.com/
-// @version      1.05
+// @version      1.06
 // @description  set project background image
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
@@ -17,6 +17,252 @@
     "use strict";
 
     let cbKeys = {};
+    let imageSelectConfig = createMonkeyConfig();
+    let lastPath, lastProjectId, lastAppName;
+
+    run();
+
+    window.addEventListener("FC_ROUTE_CHANGED", function() {
+        const paths = window.location.pathname.split("/");
+
+        const isChanged =
+              lastPath === "dashboard"
+        ? paths[2] !== lastAppName
+        : lastPath === "view"
+        ? paths[2] !== lastProjectId || paths[3] !== lastAppName
+        : false;
+
+        if (isChanged) {
+            run();
+        }
+    });
+
+    function run() {
+        const isNewUI = checkIsNewUI();
+
+        const projectHeader = isNewUI
+        ? document.querySelector(".Header--fk-Header-ProjectName")
+        : document.querySelector("#project_name");
+
+        const projectId = getProjectId(isNewUI);
+
+        if (projectId) {
+            setProject(projectId, isNewUI);
+        } else {
+            switchDashboardPages();
+        }
+    }
+
+    function createMonkeyConfig() {
+        return new MonkeyConfig({
+            title: "Config",
+            menuCommand: true,
+            params: {
+                custom_project_background: {
+                    type: "custom",
+                    html: "<div id='monkey_container' style='margin-bottom: 42px;'/>",
+                    set: function(value, parent) {
+                        cbKeys = Object.keys(value).length !== 0 ? value : cbKeys;
+
+                        const isNewUI = checkIsNewUI();
+                        const projectId = getProjectId(isNewUI);
+
+                        const container = parent.querySelector("#monkey_container");
+
+                        if (projectId) {
+                            container.innerHTML = "<input type='text' placeholder='url' style='width: 30em;'/>" +
+                                "</br><input type='checkbox' id='enable_cpb'/>" +
+                                "<label for='enable_cpb'> Enable </label>" +
+                                "<input type='checkbox' id='invert_cpb'/>" +
+                                "<label for='invert_cpb'> Invert font color</label>" +
+                                "<div><div id='delete_background' hidden><input type='checkbox' id='db_check'/>" +
+                                "<label for='db_check'> Delete background from previous version</label></div></div>" +
+                                "<a href='javascript:void(0);' id='download_old_config' style='margin-left:3px' hidden>Restore background(s) from previous version</a>";
+                            container.removeAttribute("style");
+
+                            let oldConfig = "";
+
+                            for (let key in cbKeys) {
+                                if (isNaN(key)) {
+                                    const val = cbKeys[key];
+                                    if ("url" in val && val.url) {
+                                        oldConfig += `</br><a href="${val.url}" target="_blank">${key}</a>`;
+                                    }
+                                }
+                            }
+
+                            const link = parent.querySelector("#download_old_config");
+
+                            if (!isNewUI) {
+                                if (project_unique_name in cbKeys) {
+                                    parent
+                                        .querySelector("#delete_background")
+                                        .removeAttribute("hidden");
+                                }
+                            }
+
+                            const openText = () => {
+                                const newWindow = window.open();
+                                newWindow.document.write(
+                                    "IMAGES FROM PREVIOUS VERSION" + oldConfig
+                                );
+                            };
+
+                            if (oldConfig) {
+                                link.addEventListener("click", function() {
+                                    if (!isNewUI) {
+                                        if (project_unique_name in cbKeys) {
+                                            const oldProject = cbKeys[project_unique_name];
+                                            input[0].value = oldProject.url;
+                                            input[1].checked = oldProject.enabled || false;
+                                            input[2].checked = oldProject.font_inverted || false;
+                                        } else {
+                                            openText();
+                                        }
+                                    } else {
+                                        openText();
+                                    }
+                                });
+
+                                link.removeAttribute("hidden");
+                            }
+
+                            const input = parent.querySelectorAll("input");
+
+                            if (Object.keys(value).length === 0) {
+                                // "Set defaults"
+                                input[0].value = "";
+                                input[1].checked = false;
+                                input[2].checked = false;
+                            } else if (projectId in value) {
+                                input[0].value = value[projectId].url || "";
+                                input[1].checked = value[projectId].enabled || false;
+                                input[2].checked = value[projectId].font_inverted || false;
+                            }
+                        } else {
+                            try {
+                                const grandParent = parent.parentNode;
+                                const grandGrandParent = grandParent.parentNode;
+                                grandParent.parentNode.removeChild(grandParent);
+                                grandGrandParent.insertAdjacentHTML(
+                                    "afterbegin",
+                                    "<tr><td style='display:block; width:0; margin-top:12px; margin-bottom:13px;'><div style=" +
+                                    "'font-size:14px; color:red;'>" +
+                                    "Open a project page to select a custom background.</div></td></tr>"
+                                );
+                            } catch (e) {}
+                        }
+                    },
+                    get: function(parent) {
+                        const projectId = getProjectId();
+
+                        if (projectId) {
+                            const input = parent.querySelectorAll("input");
+
+                            if (input[3].checked) {
+                                delete cbKeys[project_unique_name];
+                            }
+
+                            cbKeys[projectId] = {
+                                url: input[0].value,
+                                enabled: input[1].checked,
+                                font_inverted: input[2].checked
+                            };
+                        }
+
+                        return cbKeys;
+                    },
+                    default: {}
+                },
+                default_project_background: {
+                    type: "custom",
+                    html:
+                    "<input type='text' placeholder='url' style='width: 30em;'/>" +
+                    "</br><input type='checkbox' id='enable_dpb'/>" +
+                    "<label for='enable_dpb'> Enable </label>" +
+                    "<input type='checkbox' id='invert_dpf'/>" +
+                    "<label for='invert_dpf'> Invert font color</label>",
+                    set: function(value, parent) {
+                        const elements = parent.querySelectorAll("input");
+                        elements[0].value = value.url;
+                        elements[1].checked = value.enabled;
+                        elements[2].checked = value.font_inverted;
+                    },
+                    get: function(parent) {
+                        const elements = parent.querySelectorAll("input");
+                        const url = elements[0].value;
+                        const enabled = elements[1].checked;
+                        const fontInverted = elements[2].checked;
+
+                        return { url: url, enabled: enabled, font_inverted: fontInverted };
+                    },
+                    default: { url: "", enabled: false, font_inverted: false }
+                },
+                display_backgrounds_on_project_cards: {
+                    type: "checkbox",
+                    default: false
+                },
+                dashboards_background: {
+                    type: "custom",
+                    html:
+                    "<input type='text' placeholder='url' style='width: 30em;'/>" +
+                    "</br><input type='checkbox' id='enable_db'/>" +
+                    "<label for='enable_db'> Enable </label>" +
+                    "<input type='checkbox' id='invert_df'/>" +
+                    "<label for='invert_df'> Invert font color</label>",
+                    set: function(value, parent) {
+                        const elements = parent.querySelectorAll("input");
+                        elements[0].value = value.url;
+                        elements[1].checked = value.enabled;
+                        elements[2].checked = value.font_inverted;
+                    },
+                    get: function(parent) {
+                        const elements = parent.querySelectorAll("input");
+                        const url = elements[0].value;
+                        const enabled = elements[1].checked;
+                        const fontInverted = elements[2].checked;
+
+                        return { url: url, enabled: enabled, font_inverted: fontInverted };
+                    },
+                    default: { url: "", enabled: false, font_inverted: false }
+                }
+            },
+            onSave: function(values) {
+                location.reload();
+            }
+        });
+    }
+
+    function checkIsNewUI() {
+        return typeof project_unique_name === "undefined";
+    }
+
+    function getProjectId(isNewUI = checkIsNewUI()) {
+        let result = null;
+
+        if (isNewUI) {
+            const paths = window.location.pathname.split("/");
+            lastPath = paths[1];
+
+            if (lastPath === "dashboard") {
+                lastAppName = paths[2];
+            } else if (lastPath === "view") {
+                lastProjectId = paths[2];
+                lastAppName = paths[3];
+
+                result = lastProjectId;
+            }
+        } else {
+            try {
+                const projectId = fc.project_id.toString();
+                if (projectId !== "0") {
+                    result = projectId;
+                }
+            } catch (e) {}
+        }
+
+        return result;
+    }
 
     function testImage(url, name) {
         return new Promise(function(resolve, reject) {
@@ -127,241 +373,9 @@
     } 0px 1px ${shadowPx}px`;
     }
 
-    let imageSelectConfig;
-    let lastPath;
-    let lastProjectId;
-    let lastAppName;
-
-    run();
-
-    window.addEventListener("PROJECT_PICKER_ROUTE_CHANGE", function() {
-        const paths = window.location.pathname.split("/");
-
-        const isChanged =
-              lastPath === "dashboard"
-        ? paths[2] !== lastAppName
-        : lastPath === "view"
-        ? paths[2] !== lastProjectId || paths[3] !== lastAppName
-        : false;
-
-        if (isChanged) {
-            run();
-        }
-    });
-
-    function createMonkeyConfig(projectName, isOldUI) {
-        return new MonkeyConfig({
-            title: "Config",
-            menuCommand: true,
-            params: {
-                custom_project_background: {
-                    type: "custom",
-                    html: projectName
-                    ? "<input type='text' placeholder='url' style='width: 30em;'/>" +
-                    "</br><input type='checkbox' id='enable_cpb'/>" +
-                    "<label for='enable_cpb'> Enable </label>" +
-                    "<input type='checkbox' id='invert_cpb'/>" +
-                    "<label for='invert_cpb'> Invert font color</label>" +
-                    "<div><div id='delete_background' hidden><input type='checkbox' id='db_check'/>" +
-                    "<label for='db_check'> Delete background from previous version</label></div></div>" +
-                    "<a href='javascript:void(0);' id='download_old_config' style='margin-left:3px' hidden>Restore background(s) from previous version</a>"
-                    : "",
-                    set: function(value, parent) {
-                        cbKeys = Object.keys(value).length !== 0 ? value : cbKeys;
-
-                        if (projectName) {
-                            let oldConfig = "";
-
-                            for (let key in cbKeys) {
-                                if (isNaN(key)) {
-                                    const val = cbKeys[key];
-                                    if ("url" in val && val.url) {
-                                        oldConfig += `</br><a href="${val.url}" target="_blank">${key}</a>`;
-                                    }
-                                }
-                            }
-
-                            const link = parent.querySelector("#download_old_config");
-
-                            if (isOldUI) {
-                                if (project_unique_name in cbKeys) {
-                                    parent
-                                        .querySelector("#delete_background")
-                                        .removeAttribute("hidden");
-                                }
-                            }
-
-                            const openText = () => {
-                                let newWindow = window.open();
-                                newWindow.document.write(
-                                    "IMAGES FROM PREVIOUS VERSION" + oldConfig
-                                );
-                            };
-
-                            if (oldConfig) {
-                                link.addEventListener("click", function() {
-                                    if (isOldUI) {
-                                        if (project_unique_name in cbKeys) {
-                                            const oldProject = cbKeys[project_unique_name];
-                                            input[0].value = oldProject.url;
-                                            input[1].checked = oldProject.enabled || false;
-                                            input[2].checked = oldProject.font_inverted || false;
-                                        } else {
-                                            openText();
-                                        }
-                                    } else {
-                                        openText();
-                                    }
-                                });
-
-                                link.removeAttribute("hidden");
-                            }
-
-                            const input = parent.querySelectorAll("input");
-
-                            if (Object.keys(value).length === 0) {
-                                // "Set defaults"
-                                input[0].value = "";
-                                input[1].checked = false;
-                                input[2].checked = false;
-                            } else if (projectName in value) {
-                                input[0].value = value[projectName].url || "";
-                                input[1].checked = value[projectName].enabled || false;
-                                input[2].checked = value[projectName].font_inverted || false;
-                            }
-                        } else {
-                            try {
-                                const grandParent = parent.parentNode;
-                                const grandGrandParent = grandParent.parentNode;
-                                grandParent.parentNode.removeChild(grandParent);
-                                grandGrandParent.insertAdjacentHTML(
-                                    "afterbegin",
-                                    "<tr><td style='display:block; width:0;'><div style=" +
-                                    "'font-size:14px; color:red;'>" +
-                                    "Open a project page to select a custom background.</div></td></tr>"
-                                );
-                            } catch (e) {}
-                        }
-                    },
-                    get: function(parent) {
-                        if (projectName) {
-                            const input = parent.querySelectorAll("input");
-
-                            if (input[3].checked) {
-                                delete cbKeys[project_unique_name];
-                            }
-
-                            cbKeys[projectName] = {
-                                url: input[0].value,
-                                enabled: input[1].checked,
-                                font_inverted: input[2].checked
-                            };
-                        }
-
-                        return cbKeys;
-                    },
-                    default: {}
-                },
-                default_project_background: {
-                    type: "custom",
-                    html:
-                    "<input type='text' placeholder='url' style='width: 30em;'/>" +
-                    "</br><input type='checkbox' id='enable_dpb'/>" +
-                    "<label for='enable_dpb'> Enable </label>" +
-                    "<input type='checkbox' id='invert_dpf'/>" +
-                    "<label for='invert_dpf'> Invert font color</label>",
-                    set: function(value, parent) {
-                        const elements = parent.querySelectorAll("input");
-                        elements[0].value = value.url;
-                        elements[1].checked = value.enabled;
-                        elements[2].checked = value.font_inverted;
-                    },
-                    get: function(parent) {
-                        const elements = parent.querySelectorAll("input");
-                        const url = elements[0].value;
-                        const enabled = elements[1].checked;
-                        const fontInverted = elements[2].checked;
-
-                        return { url: url, enabled: enabled, font_inverted: fontInverted };
-                    },
-                    default: { url: "", enabled: false, font_inverted: false }
-                },
-                display_backgrounds_on_project_cards: {
-                    type: "checkbox",
-                    default: false
-                },
-                dashboards_background: {
-                    type: "custom",
-                    html:
-                    "<input type='text' placeholder='url' style='width: 30em;'/>" +
-                    "</br><input type='checkbox' id='enable_db'/>" +
-                    "<label for='enable_db'> Enable </label>" +
-                    "<input type='checkbox' id='invert_df'/>" +
-                    "<label for='invert_df'> Invert font color</label>",
-                    set: function(value, parent) {
-                        const elements = parent.querySelectorAll("input");
-                        elements[0].value = value.url;
-                        elements[1].checked = value.enabled;
-                        elements[2].checked = value.font_inverted;
-                    },
-                    get: function(parent) {
-                        const elements = parent.querySelectorAll("input");
-                        const url = elements[0].value;
-                        const enabled = elements[1].checked;
-                        const fontInverted = elements[2].checked;
-
-                        return { url: url, enabled: enabled, font_inverted: fontInverted };
-                    },
-                    default: { url: "", enabled: false, font_inverted: false }
-                }
-            },
-            onSave: function(values) {
-                location.reload();
-            }
-        });
-    }
-
-    function run() {
-        const isNewUI = typeof project_unique_name === "undefined";
-
-        let projectName;
-        let projectHeader = isNewUI
-        ? document.querySelector(".Header--fk-Header-ProjectName")
-        : document.querySelector("#project_name");
-
-        if (isNewUI) {
-            const paths = window.location.pathname.split("/");
-            lastPath = paths[1];
-
-            if (lastPath === "dashboard") {
-                lastAppName = paths[2];
-            } else if (lastPath === "view") {
-                lastProjectId = paths[2];
-                lastAppName = paths[3];
-
-                projectName = lastProjectId;
-            }
-        } else {
-            try {
-                const projectId = fc.project_id.toString();
-                if (projectId !== "0") {
-                    projectName = projectId;
-                }
-            } catch (e) {}
-        }
-
-        imageSelectConfig = createMonkeyConfig(projectName, !isNewUI);
-
-        if (projectName) {
-            setProject(projectName, isNewUI);
-        } else {
-            switchDashboardPages();
-        }
-    }
-
-    function setProject(projectName, isNewUI) {
+    function setProject(projectId, isNewUI) {
         const cbConfig = imageSelectConfig.get("custom_project_background")[
-            projectName
+            projectId
         ];
 
         if (cbConfig && cbConfig.enabled) {
