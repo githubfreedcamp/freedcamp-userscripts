@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp project colors
 // @namespace    http://freedcamp.com/
-// @version      1.02
+// @version      1.03
 // @description  enable project cards background color
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
@@ -279,7 +279,7 @@
     const isNewUI = !!newProjectSwitcher;
 
     if (isNewUI) {
-        window.addEventListener("PROJECT_PICKER_OPENED", () =>
+        window.addEventListener("FC_PROJECT_PICKER_OPENED", () =>
                                 switchSideProjects(isNewUI)
                                );
     } else {
