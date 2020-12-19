@@ -234,7 +234,7 @@
     }
 
     function checkIsNewUI() {
-        return typeof project_unique_name === "undefined";
+        return typeof react_cache_version !== "undefined";
     }
 
     function getProjectId(isNewUI = checkIsNewUI()) {
