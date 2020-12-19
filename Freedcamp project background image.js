@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp custom image background
 // @namespace    http://freedcamp.com/
-// @version      1.06
+// @version      1.07
 // @description  set project background image
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
@@ -264,31 +264,6 @@
         return result;
     }
 
-    function testImage(url, name) {
-        return new Promise(function(resolve, reject) {
-            const timeout = 5000;
-            let timer,
-                img = new Image();
-            img.onerror = img.onabort = function() {
-                clearTimeout(timer);
-                viewUrlError(name);
-                reject(false);
-            };
-            img.onload = function() {
-                clearTimeout(timer);
-                resolve(true);
-            };
-            timer = setTimeout(function() {
-                // reset .src to invalid URL so it stops previous
-                // loading, but doens't trigger new load
-                img.src = "//!!!!/notexist.jpg";
-                viewUrlError(name);
-                reject(false);
-            }, timeout);
-            img.src = url;
-        });
-    }
-
     function viewUrlError(text) {
         setTimeout(function() {
             alert(
@@ -385,11 +360,7 @@
 
             tryToSetFolderIcon(cbFontColor);
 
-            testImage(cbUrl, "Custom project").then(success => {
-                if (success) {
-                    setProjectBackground(cbUrl, cbFontColor);
-                }
-            });
+            setProjectBackground(cbUrl, cbFontColor);
 
             if (!isNewUI) {
                 tryToSetSpans(cbFontColor, cbpShadowColor);
@@ -403,11 +374,7 @@
             if (dbpEnabled) {
                 const dpbUrl = dpbConfig.url;
 
-                testImage(dpbUrl, "Default project").then(success => {
-                    if (success) {
-                        setProjectBackground(dpbUrl, dbpFontColor);
-                    }
-                });
+                setProjectBackground(dpbUrl, dbpFontColor);
 
                 tryToSetFolderIcon(dbpFontColor);
 
@@ -459,38 +426,34 @@
             const dbShadowColor = dbParams.font_inverted ? "white" : "black";
 
             if (dbEnabled) {
-                testImage(dbUrl, "Dashboard").then(success => {
-                    if (success) {
-                        const body = document.body.style;
+                const body = document.body.style;
 
-                        body.background = `url(${dbUrl})`;
-                        body.backgroundSize = "cover";
-                        body.backgroundRepeat = "no-repeat";
-                        body.backgroundPosition = "50% 50%";
-                        body.backgroundAttachment = "fixed";
+                body.background = `url(${dbUrl})`;
+                body.backgroundSize = "cover";
+                body.backgroundRepeat = "no-repeat";
+                body.backgroundPosition = "50% 50%";
+                body.backgroundAttachment = "fixed";
 
-                        switch (page) {
-                            case "dashboard/home":
-                                switchDashboardHome(dbFontColor, dbShadowColor);
-                                break;
-                            case "dashboard":
-                                switchDashboard(dbFontColor, dbShadowColor);
-                                break;
-                            case "dashboard/tasks":
-                                switchDashboardTasks(dbFontColor, dbShadowColor);
-                                break;
-                            case "dashboard/calendar":
-                                switchDashBoardCalendar(dbFontColor, dbShadowColor);
-                                break;
-                            case "dashboard/widgets":
-                                switchDashboardWidgets(dbFontColor);
-                                break;
-                            case "dashboard/reports":
-                                switchDashboardReports(dbFontColor, dbShadowColor);
-                                break;
-                        }
-                    }
-                });
+                switch (page) {
+                    case "dashboard/home":
+                        switchDashboardHome(dbFontColor, dbShadowColor);
+                        break;
+                    case "dashboard":
+                        switchDashboard(dbFontColor, dbShadowColor);
+                        break;
+                    case "dashboard/tasks":
+                        switchDashboardTasks(dbFontColor, dbShadowColor);
+                        break;
+                    case "dashboard/calendar":
+                        switchDashBoardCalendar(dbFontColor, dbShadowColor);
+                        break;
+                    case "dashboard/widgets":
+                        switchDashboardWidgets(dbFontColor);
+                        break;
+                    case "dashboard/reports":
+                        switchDashboardReports(dbFontColor, dbShadowColor);
+                        break;
+                }
             }
         }
     }
@@ -519,15 +482,11 @@
             } else if (dpbEnabled) {
                 // check default background url only once
                 if (!dpbUrlChecked) {
-                    testImage(dpbUrl, "Default project").then(success => {
-                        dpbUrlChecked = true;
+                    dpbUrlChecked = true;
 
-                        if (success) {
-                            dpbUrlVerified = true;
+                    dpbUrlVerified = true;
 
-                            setProjectCardBackground(pBlock, dpbUrl, dpbFontInverted);
-                        }
-                    });
+                    setProjectCardBackground(pBlock, dpbUrl, dpbFontInverted);
                 } else if (dpbUrlVerified) {
                     setProjectCardBackground(pBlock, dpbUrl, dpbFontInverted);
                 }
@@ -538,14 +497,9 @@
     function switchDashboardCPBProjectCard(pBlock, pName, cpbUrls) {
         const cpbUrl = cpbUrls[pName].url;
 
-        testImage(cpbUrl, `Project ${pName}`).then(success => {
-            if (success) {
-                // set background image and disable animation
-                const fontInverted = cpbUrls[pName].font_inverted;
+        const fontInverted = cpbUrls[pName].font_inverted;
 
-                setProjectCardBackground(pBlock, cpbUrl, fontInverted);
-            }
-        });
+        setProjectCardBackground(pBlock, cpbUrl, fontInverted);
     }
 
     function switchDashboardHome(dbFontColor, dbShadowColor) {
