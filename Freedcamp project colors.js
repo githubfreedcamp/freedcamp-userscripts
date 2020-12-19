@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp project colors
 // @namespace    http://freedcamp.com/
-// @version      1.03
+// @version      1.04
 // @description  enable project cards background color
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
@@ -86,8 +86,8 @@
     });
 
     const MODE = modeSelectConfig.get("highlight")[0];
-    const MTPD_CHECKED = modeSelectConfig.get("highlight")[1];
-    const MTPN_CHECKED = modeSelectConfig.get("highlight")[2];
+    const MTPN_CHECKED = modeSelectConfig.get("highlight")[1];
+    const MTPD_CHECKED = modeSelectConfig.get("highlight")[2];
 
     const OPACITY = colorOpacityConfig.get("opacity") / 100;
 
@@ -247,26 +247,199 @@
         });
     }
 
+    window.addEventListener("FC_ROUTE_CHANGED", function() {
+        if (window.location.pathname === "/dashboard/home") {
+            setTimeout(() => switchHomeDashboardColors(), 0);
+        }
+    });
+
     // on dashboard page
-    if (window.location.href.match(/.+\/dashboard(\/)?$/)) {
-        const projects = document.querySelectorAll(".project");
+    if (window.location.pathname === "/dashboard") {
+        switchDashboardColors();
+    } else if (window.location.pathname === "/dashboard/home") {
+        switchHomeDashboardColors();
+    }
+
+    function switchDashboardColors() {
+        const pBlocks = document.querySelectorAll(".project");
 
         if (MODE === "FPPC" || MODE === "FPSC") {
-            for (let i = 0; i < projects.length; i++) {
-                if (projects[i].querySelector(".favorited")) {
-                    switchDashboardColor(projects[i]);
+            for (let i = 0; i < pBlocks.length; i++) {
+                const pBlock = pBlocks[i];
+
+                if (isDashboardFavorite(pBlock)) {
+                    switchDashboardColor(pBlock);
                 }
 
-                projects[i].querySelector(
+                pBlock.querySelector(
                     ".favorite_project_action"
-                ).onclick = function() {
-                    switchDashboardColor(projects[i]);
-                };
+                ).onclick = () => switchDashboardColor(pBlocks[i]);
             }
         } else {
-            for (let i = 0; i < projects.length; i++) {
-                switchDashboardColor(projects[i]);
+            for (let i = 0; i < pBlocks.length; i++) {
+                switchDashboardColor(pBlocks[i]);
             }
+        }
+    }
+
+    function switchDashboardColor(pBlock) {
+        let color, isColorLight, opColor;
+
+        switch (MODE) {
+            case "FPPC":
+            case "APPC":
+                color = pBlock.querySelector(".card_color").style.backgroundColor;
+                break;
+            case "FPSC":
+                color = hexToRgb(fpscConfig.get("custom_color"));
+                break;
+            case "MTP": {
+                const keywords = mtConfig.get("keywords");
+                const name = pBlock
+                .querySelector(".project_name")
+                .textContent.toLowerCase();
+                const description = pBlock
+                .querySelector(".project_desc")
+                .textContent.toLowerCase();
+
+                for (let key in keywords) {
+                    if (isKeyMatch(key, name, description)) {
+                        const value = keywords[key];
+
+                        color = hexToRgb(value);
+                        break;
+                    }
+                }
+
+                break;
+            }
+        }
+
+        if (color) {
+            isColorLight = isLight(color);
+            opColor = `${color.substring(0, color.length - 1)}, ${OPACITY})`;
+
+            const desc = pBlock.querySelector(".project_desc");
+            const noDesc = pBlock.querySelector(".no_description");
+            const cogImage = pBlock.querySelector(".cog_image");
+
+            const name = pBlock.querySelector(".project_name");
+
+            if (pBlock.style.background) {
+                pBlock.removeAttribute("style");
+            } else {
+                pBlock.style.background = opColor;
+            }
+
+            invertColor(name, isColorLight);
+
+            if (noDesc) {
+                invertColor(noDesc, isColorLight);
+            } else {
+                invertColor(desc, isColorLight);
+            }
+
+            if (cogImage.style.color) {
+                cogImage.removeAttribute("style");
+            } else {
+                cogImage.style.color = "black";
+            }
+        }
+    }
+
+    function isDashboardFavorite(pBlock) {
+        return !!pBlock.querySelector(".favorited");
+    }
+
+    function switchHomeDashboardColors() {
+        const pBlocks = document.querySelectorAll(".HomeProjectItem--fk-HomeProjectItem");
+
+        for (let i = 0; i < pBlocks.length; i++) {
+            const pBlock = pBlocks[i];
+
+            if (MODE === "FPPC" || MODE === "FPSC") {
+                if (isHomeDashboardFavorite(pBlock)) {
+                    switchHomeDashboardColor(pBlock, true);
+                }
+
+                const favButton = pBlock.querySelector(".tooltip-trigger");
+
+                favButton.onclick = () => switchHomeDashboardColor(pBlock);
+            } else {
+                switchHomeDashboardColor(pBlock, true);
+            }
+        }
+    }
+
+    function switchHomeDashboardColor(pBlock, isNotHover) {
+        let color, isColorLight, opColor;
+
+        switch (MODE) {
+            case "FPPC":
+            case "APPC":
+                color = pBlock.querySelector(".ProjectIcon--project-Icon").style.backgroundColor;
+                break;
+            case "FPSC":
+                color = hexToRgb(fpscConfig.get("custom_color"));
+                break;
+            case "MTP": {
+                const keywords = mtConfig.get("keywords");
+                const name = pBlock.querySelector(".HomeProjectItem--fk-Home-Project-Name").innerText.toLowerCase();
+
+                for (let key in keywords) {
+                    if (isKeyMatch(key, name, "")) {
+                        const value = keywords[key];
+
+                        color = hexToRgb(value);
+                        break;
+                    }
+                }
+
+                break;
+            }
+        }
+
+        if (color) {
+            isColorLight = isLight(color);
+            opColor = `${color.substring(0, color.length - 1)}, ${OPACITY})`;
+
+            const defaultColor = "rgb(235,237,243)";
+            const isFavorite = isHomeDashboardFavorite(pBlock);
+
+            const light = "white";
+            const dark = "rgb(0,0,0,0.7)";
+
+            if (pBlock.style.background) {
+                pBlock.removeAttribute("style");
+            } else {
+                pBlock.style.background = opColor;
+            }
+
+            const apps = pBlock.querySelectorAll(".HomeProjectItem--fk-HomeProjectItem-App");
+
+            for (let i = 0; i < apps.length; i++) {
+                const appIcon = apps[i].querySelector("svg");
+
+                invertColor(appIcon, isColorLight, light, dark, "rgb(160, 166, 199)");
+            }
+
+            const dropdownIcon = pBlock.querySelector(".fk-Dropdown-Trigger").querySelector("svg");
+            invertColor(dropdownIcon, isColorLight, light, dark, "inherit");
+
+            const name = pBlock.querySelector(".HomeProjectItem--fk-Home-Project-Name");
+            invertColor(name, isColorLight, light, dark);
+
+            const group = pBlock.querySelector(".HomeProjectItem--fk-Home-Project-Group-Name");
+            invertColor(group, isColorLight, light, dark);
+        }
+    }
+
+    function isHomeDashboardFavorite(pBlock) {
+        try {
+            return pBlock.querySelector(".tooltip-trigger")
+                .querySelector("i").style.color === "rgb(230, 180, 31)";
+        } catch(e) {
+            return false;
         }
     }
 
@@ -276,7 +449,7 @@
     const newProjectSwitcher = document.querySelector(
         ".Header--fk-Header-Project"
     );
-    const isNewUI = !!newProjectSwitcher;
+    const isNewUI = typeof react_cache_version !== "undefined";
 
     if (isNewUI) {
         window.addEventListener("FC_PROJECT_PICKER_OPENED", () =>
@@ -307,8 +480,9 @@
     function isKeyMatch(key, name, description) {
         let matchBool;
 
-        const matchNameBool = name.indexOf(key.toLowerCase()) !== -1;
-        const matchDescBool = description.indexOf(key.toLowerCase()) !== -1;
+        const matchNameBool = name.toLowerCase().indexOf(key.toLowerCase()) !== -1;
+        const matchDescBool = description.toLowerCase().indexOf(key.toLowerCase()) !== -1;
+
         const matchNameDescBool = matchNameBool || matchDescBool;
 
         if (MTPN_CHECKED && MTPD_CHECKED) {
@@ -365,7 +539,7 @@
         }
 
         if (color) {
-            const colorIsLight = isLight(color);
+            const isColorLight = isLight(color);
 
             const name = sideProject.querySelector(
                 isNewUI ? ".ProjectPicker--fk-ProjectPicker-ProjectName" : ".name"
@@ -382,10 +556,10 @@
                 : ".fc_app"
             );
 
-            invertColor(name, colorIsLight);
+            invertColor(name, isColorLight);
 
             if (desc) {
-                invertColor(desc, colorIsLight);
+                invertColor(desc, isColorLight);
             }
 
             // make buttons dark
@@ -406,71 +580,6 @@
         }
     }
 
-    function switchDashboardColor(pBlock) {
-        let color, colorIsLight, opColor;
-
-        switch (MODE) {
-            case "FPPC":
-            case "APPC":
-                color = pBlock.querySelector(".card_color").style.backgroundColor;
-                break;
-            case "FPSC":
-                color = hexToRgb(fpscConfig.get("custom_color"));
-                break;
-            case "MTP": {
-                const keywords = mtConfig.get("keywords");
-                const name = pBlock
-                .querySelector(".project_name")
-                .textContent.toLowerCase();
-                const description = pBlock
-                .querySelector(".project_desc")
-                .textContent.toLowerCase();
-
-                for (let key in keywords) {
-                    if (isKeyMatch(key, name, description)) {
-                        const value = keywords[key];
-
-                        color = hexToRgb(value);
-                        break;
-                    }
-                }
-
-                break;
-            }
-        }
-
-        if (color) {
-            colorIsLight = isLight(color);
-            opColor = `${color.substring(0, color.length - 1)}, ${OPACITY})`;
-
-            const desc = pBlock.querySelector(".project_desc");
-            const noDesc = pBlock.querySelector(".no_description");
-            const cogImage = pBlock.querySelector(".cog_image");
-
-            const name = pBlock.querySelector(".project_name");
-
-            if (pBlock.style.background) {
-                pBlock.removeAttribute("style");
-            } else {
-                pBlock.style.background = opColor;
-            }
-
-            invertColor(name, colorIsLight);
-
-            if (noDesc) {
-                invertColor(noDesc, colorIsLight);
-            } else {
-                invertColor(desc, colorIsLight);
-            }
-
-            if (cogImage.style.color) {
-                cogImage.removeAttribute("style");
-            } else {
-                cogImage.style.color = "black";
-            }
-        }
-    }
-
     function isLight(color) {
         let r, g, b, hsp;
 
@@ -487,11 +596,19 @@
         return hsp > 127.5;
     }
 
-    function invertColor(element, light) {
-        if (element.style.color) {
-            element.removeAttribute("style");
+    function invertColor(element, isLight, light = "white", dark = "black", defaultColor) {
+        if (defaultColor) {
+            if (element.style.color !== defaultColor) {
+                element.style.color = defaultColor;
+            } else {
+                element.style.color = isLight ? "black" : "white";
+            }
         } else {
-            element.style.color = light ? "black" : "white";
+            if (element.style.color) {
+                element.removeAttribute("style");
+            } else {
+                element.style.color = isLight ? "black" : "white";
+            }
         }
     }
 
