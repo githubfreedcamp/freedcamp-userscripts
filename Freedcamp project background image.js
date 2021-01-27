@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp custom image background
 // @namespace    http://freedcamp.com/
-// @version      1.07
+// @version      1.08
 // @description  set project background image
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
@@ -13,7 +13,7 @@
 // @grant        GM_registerMenuCommand
 // ==/UserScript==
 
-(function() {
+(function () {
     "use strict";
 
     let cbKeys = {};
@@ -22,7 +22,7 @@
 
     run();
 
-    window.addEventListener("FC_ROUTE_CHANGED", function() {
+    window.addEventListener("FC_ROUTE_CHANGED", function () {
         const paths = window.location.pathname.split("/");
 
         const isChanged =
@@ -33,7 +33,7 @@
         : false;
 
         if (isChanged) {
-            run();
+            setTimeout(() => run(), 0);
         }
     });
 
@@ -61,7 +61,7 @@
                 custom_project_background: {
                     type: "custom",
                     html: "<div id='monkey_container' style='margin-bottom: 42px;'/>",
-                    set: function(value, parent) {
+                    set: function (value, parent) {
                         cbKeys = Object.keys(value).length !== 0 ? value : cbKeys;
 
                         const isNewUI = checkIsNewUI();
@@ -70,7 +70,8 @@
                         const container = parent.querySelector("#monkey_container");
 
                         if (projectId) {
-                            container.innerHTML = "<input type='text' placeholder='url' style='width: 30em;'/>" +
+                            container.innerHTML =
+                                "<input type='text' placeholder='url' style='width: 30em;'/>" +
                                 "</br><input type='checkbox' id='enable_cpb'/>" +
                                 "<label for='enable_cpb'> Enable </label>" +
                                 "<input type='checkbox' id='invert_cpb'/>" +
@@ -109,7 +110,7 @@
                             };
 
                             if (oldConfig) {
-                                link.addEventListener("click", function() {
+                                link.addEventListener("click", function () {
                                     if (!isNewUI) {
                                         if (project_unique_name in cbKeys) {
                                             const oldProject = cbKeys[project_unique_name];
@@ -150,10 +151,11 @@
                                     "'font-size:14px; color:red;'>" +
                                     "Open a project page to select a custom background.</div></td></tr>"
                                 );
-                            } catch (e) {}
+                            } catch (e) {
+                            }
                         }
                     },
-                    get: function(parent) {
+                    get: function (parent) {
                         const projectId = getProjectId();
 
                         if (projectId) {
@@ -182,21 +184,21 @@
                     "<label for='enable_dpb'> Enable </label>" +
                     "<input type='checkbox' id='invert_dpf'/>" +
                     "<label for='invert_dpf'> Invert font color</label>",
-                    set: function(value, parent) {
+                    set: function (value, parent) {
                         const elements = parent.querySelectorAll("input");
                         elements[0].value = value.url;
                         elements[1].checked = value.enabled;
                         elements[2].checked = value.font_inverted;
                     },
-                    get: function(parent) {
+                    get: function (parent) {
                         const elements = parent.querySelectorAll("input");
                         const url = elements[0].value;
                         const enabled = elements[1].checked;
                         const fontInverted = elements[2].checked;
 
-                        return { url: url, enabled: enabled, font_inverted: fontInverted };
+                        return {url: url, enabled: enabled, font_inverted: fontInverted};
                     },
-                    default: { url: "", enabled: false, font_inverted: false }
+                    default: {url: "", enabled: false, font_inverted: false}
                 },
                 display_backgrounds_on_project_cards: {
                     type: "checkbox",
@@ -210,24 +212,24 @@
                     "<label for='enable_db'> Enable </label>" +
                     "<input type='checkbox' id='invert_df'/>" +
                     "<label for='invert_df'> Invert font color</label>",
-                    set: function(value, parent) {
+                    set: function (value, parent) {
                         const elements = parent.querySelectorAll("input");
                         elements[0].value = value.url;
                         elements[1].checked = value.enabled;
                         elements[2].checked = value.font_inverted;
                     },
-                    get: function(parent) {
+                    get: function (parent) {
                         const elements = parent.querySelectorAll("input");
                         const url = elements[0].value;
                         const enabled = elements[1].checked;
                         const fontInverted = elements[2].checked;
 
-                        return { url: url, enabled: enabled, font_inverted: fontInverted };
+                        return {url: url, enabled: enabled, font_inverted: fontInverted};
                     },
-                    default: { url: "", enabled: false, font_inverted: false }
+                    default: {url: "", enabled: false, font_inverted: false}
                 }
             },
-            onSave: function(values) {
+            onSave: function (values) {
                 location.reload();
             }
         });
@@ -258,14 +260,15 @@
                 if (projectId !== "0") {
                     result = projectId;
                 }
-            } catch (e) {}
+            } catch (e) {
+            }
         }
 
         return result;
     }
 
     function viewUrlError(text) {
-        setTimeout(function() {
+        setTimeout(function () {
             alert(
                 `${text} background image error:\nIncorrect background url! Please change it.`
             );
@@ -336,7 +339,7 @@
     }
 
     function setProjectCardFontColor(
-     element,
+    element,
      fontInverted,
      marginLeftPx,
      shadowPx
@@ -473,7 +476,12 @@
         const pBlocks = document.querySelectorAll(".project");
 
         pBlocks.forEach(pBlock => {
-            const pName = pBlock
+            const pName = checkIsNewUI()
+            ? pBlock
+            .querySelector(".Link--link.project_name")
+            .getAttribute("href")
+            .split("/")[2]
+            : pBlock
             .querySelector(".favorite_project_action")
             .getAttribute("data-id");
 
@@ -520,7 +528,8 @@
                 const titleChild = titleChilds[x];
                 titleChild.style.color = dbFontColor;
                 titleChild.style.textShadow = `${dbShadowColor} 0px 1px 8px`;
-            } catch (e) {}
+            } catch (e) {
+            }
         }
 
         for (let i = 0; i < titles.length; i++) {
@@ -555,19 +564,39 @@
             document
                 .querySelector("#fk-Home-Projects-Dropdown")
                 .querySelector("svg").style.color = dbFontColor;
-        } catch (e) {}
+        } catch (e) {
+        }
     }
 
     function switchDashboard(dbFontColor, dbShadowColor) {
         const subheaders = document.querySelectorAll(".subheader");
+
         subheaders.forEach(subheader => {
+            const svg = subheader.querySelector("svg");
+
+            if (svg) {
+                svg.style.textShadow = `${dbShadowColor} 0px 1px 14px`;
+            }
+
             subheader.style.color = dbFontColor;
             subheader.style.textShadow = `${dbShadowColor} 0px 1px 14px`;
         });
 
-        const greeting = document.querySelector(".greeting.left").style;
-        greeting.color = dbFontColor;
-        greeting.textShadow = `${dbShadowColor} 0px 1px 18px`;
+        if (checkIsNewUI()) {
+            const filter = document.querySelector("svg[name=filter]").parentElement
+            .parentElement.style;
+            const eye = document.querySelector("svg[name=eye]").style;
+
+            filter.color = dbFontColor;
+            filter.textShadow = `${dbShadowColor} 0px 1px 18px`;
+
+            eye.color = dbFontColor;
+            eye.shadow = `${dbShadowColor} 0px 1px 18px`;
+        } else {
+            const greeting = document.querySelector(".greeting.left").style;
+            greeting.color = dbFontColor;
+            greeting.textShadow = `${dbShadowColor} 0px 1px 18px`;
+        }
     }
 
     function switchDashboardTasks(dbFontColor, dbShadowColor) {
@@ -617,7 +646,7 @@
      dbShadowColor,
      customRadius = 3
     ) {
-        const interval = setInterval(function() {
+        const interval = setInterval(function () {
             const el = document.querySelector(selector);
             if (el) {
                 const reportText = el.style;
