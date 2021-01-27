@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Freedcamp project colors
 // @namespace    http://freedcamp.com/
-// @version      1.04
+// @version      1.05
 // @description  enable project cards background color
 // @author       devops@freedcamp.com
 // @match        *://freedcamp.com/*
@@ -15,6 +15,21 @@
 // ==/UserScript==
 (function() {
     "use strict";
+
+    window.addEventListener("FC_ROUTE_CHANGED", function() {
+        switch (window.location.pathname) {
+            case "/dashboard/home":
+                setTimeout(() => switchHomeProjectsColors(), 0);
+                break;
+            case "/dashboard":
+                setTimeout(() => switchDashboardProjectsColors(true), 0);
+                break;
+        }
+    });
+
+    window.addEventListener("DASHBOARD_PROJECTS_RENDERED", function() {
+        setTimeout(() => switchDashboardProjectsColors(true), 0);
+    });
 
     let mtConfig, fpscConfig;
 
@@ -93,43 +108,7 @@
 
     const HEX_REGEX = /^(\s+)?((#(0x){0,1}|#{0,1})([0-9A-Fa-f]{8}|[0-9A-Fa-f]{6}))(\s+)?$/;
 
-    function mtpGenerateKeyFields(keywords) {
-        let html =
-            "<input type='text' placeholder='keyword' style='width: 10em;'/>  " +
-            "<input type='color' placeholder='HEX color' style='width: 5em;'/></br>";
-
-        let kCount = 0;
-
-        for (let key in keywords) {
-            kCount++;
-        }
-
-        for (let i = 1; i < kCount; i++) {
-            html +=
-                "<input type='text' style='width: 10em;'/>  " +
-                "<input type='color' style='width: 5em;'/></br>";
-        }
-
-        const buttonStyle =
-              "display:inline-block;" +
-              "border-radius: 2px;" +
-              "background-color: #4CAF50;" +
-              "color: white;" +
-              "padding: 1em;" +
-              "margin-top: 0.5em;" +
-              "width: 15.5em;";
-
-        html += `<button id='addButton' style='${buttonStyle}'>Add +1 keyword</button>`;
-
-        return html;
-    }
-
-    function mtpSetCenter() {
-        document.getElementsByClassName("__MonkeyConfig_layer")[0].style.top =
-            "50%";
-        document.getElementsByClassName("__MonkeyConfig_layer")[0].style.transform =
-            "translate(0, -50%)";
-    }
+    const IS_NEW_UI = typeof react_cache_version !== "undefined";
 
     if (MODE === "FPSC") {
         fpscConfig = new MonkeyConfig({
@@ -247,42 +226,98 @@
         });
     }
 
-    window.addEventListener("FC_ROUTE_CHANGED", function() {
-        if (window.location.pathname === "/dashboard/home") {
-            setTimeout(() => switchHomeDashboardColors(), 0);
+    function waitForProjectsToLoad(func) {
+        const interval = setInterval(function() {
+            if (dashboardProjectsLoaded) {
+                func();
+                clearInterval(interval);
+            }
+        }, 50);
+    }
+
+    function mtpGenerateKeyFields(keywords) {
+        let html =
+            "<input type='text' placeholder='keyword' style='width: 10em;'/>  " +
+            "<input type='color' placeholder='HEX color' style='width: 5em;'/></br>";
+
+        let kCount = 0;
+
+        for (let key in keywords) {
+            kCount++;
         }
-    });
+
+        for (let i = 1; i < kCount; i++) {
+            html +=
+                "<input type='text' style='width: 10em;'/>  " +
+                "<input type='color' style='width: 5em;'/></br>";
+        }
+
+        const buttonStyle =
+              "display:inline-block;" +
+              "border-radius: 2px;" +
+              "background-color: #4CAF50;" +
+              "color: white;" +
+              "padding: 1em;" +
+              "margin-top: 0.5em;" +
+              "width: 15.5em;";
+
+        html += `<button id='addButton' style='${buttonStyle}'>Add +1 keyword</button>`;
+
+        return html;
+    }
+
+    function mtpSetCenter() {
+        document.getElementsByClassName("__MonkeyConfig_layer")[0].style.top =
+            "50%";
+        document.getElementsByClassName("__MonkeyConfig_layer")[0].style.transform =
+            "translate(0, -50%)";
+    }
 
     // on dashboard page
     if (window.location.pathname === "/dashboard") {
-        switchDashboardColors();
+        if (!IS_NEW_UI) {
+            switchDashboardProjectsColors();
+        } else {
+            waitForProjectsToLoad(() => switchDashboardProjectsColors());
+        }
     } else if (window.location.pathname === "/dashboard/home") {
-        switchHomeDashboardColors();
+        switchHomeProjectsColors();
     }
 
-    function switchDashboardColors() {
+    function switchDashboardProjectsColors(enableOnly = false) {
         const pBlocks = document.querySelectorAll(".project");
 
         if (MODE === "FPPC" || MODE === "FPSC") {
             for (let i = 0; i < pBlocks.length; i++) {
                 const pBlock = pBlocks[i];
 
-                if (isDashboardFavorite(pBlock)) {
-                    switchDashboardColor(pBlock);
+                if (isDashboardProjectFavorite(pBlock)) {
+                    switchDashboardProjectColor(pBlock, enableOnly);
                 }
 
-                pBlock.querySelector(
-                    ".favorite_project_action"
-                ).onclick = () => switchDashboardColor(pBlocks[i]);
+                pBlock.querySelector(".favorite_project_action").onclick = function() {
+                    if (IS_NEW_UI) {
+                        const url = pBlock.querySelector(".Link--link.project_name").href;
+                        const clones = [
+                            ...document.querySelectorAll(".Link--link.project_name")
+                        ].filter(a => a.href === url);
+
+                        clones.forEach(clone =>
+                                       switchDashboardProjectColor(clone.parentElement.parentElement)
+                                      );
+                    } else {
+                        switchDashboardProjectColor(pBlock);
+                    }
+                };
             }
         } else {
             for (let i = 0; i < pBlocks.length; i++) {
-                switchDashboardColor(pBlocks[i]);
+                switchDashboardProjectColor(pBlocks[i], enableOnly);
             }
         }
     }
 
-    function switchDashboardColor(pBlock) {
+    function switchDashboardProjectColor(pBlock, enableOnly) {
         let color, isColorLight, opColor;
 
         switch (MODE) {
@@ -319,17 +354,21 @@
             isColorLight = isLight(color);
             opColor = `${color.substring(0, color.length - 1)}, ${OPACITY})`;
 
+            if (pBlock.style.background) {
+                if (enableOnly) {
+                    return;
+                }
+
+                pBlock.removeAttribute("style");
+            } else {
+                pBlock.style.background = opColor;
+            }
+
             const desc = pBlock.querySelector(".project_desc");
             const noDesc = pBlock.querySelector(".no_description");
             const cogImage = pBlock.querySelector(".cog_image");
 
             const name = pBlock.querySelector(".project_name");
-
-            if (pBlock.style.background) {
-                pBlock.removeAttribute("style");
-            } else {
-                pBlock.style.background = opColor;
-            }
 
             invertColor(name, isColorLight);
 
@@ -347,44 +386,49 @@
         }
     }
 
-    function isDashboardFavorite(pBlock) {
+    function isDashboardProjectFavorite(pBlock) {
         return !!pBlock.querySelector(".favorited");
     }
 
-    function switchHomeDashboardColors() {
-        const pBlocks = document.querySelectorAll(".HomeProjectItem--fk-HomeProjectItem");
+    function switchHomeProjectsColors() {
+        const pBlocks = document.querySelectorAll(
+            ".HomeProjectItem--fk-HomeProjectItem"
+        );
 
         for (let i = 0; i < pBlocks.length; i++) {
             const pBlock = pBlocks[i];
 
             if (MODE === "FPPC" || MODE === "FPSC") {
-                if (isHomeDashboardFavorite(pBlock)) {
-                    switchHomeDashboardColor(pBlock, true);
+                if (isHomeProjectFavorite(pBlock)) {
+                    switchHomeProjectColor(pBlock, true);
                 }
 
                 const favButton = pBlock.querySelector(".tooltip-trigger");
 
-                favButton.onclick = () => switchHomeDashboardColor(pBlock);
+                favButton.onclick = () => switchHomeProjectColor(pBlock);
             } else {
-                switchHomeDashboardColor(pBlock, true);
+                switchHomeProjectColor(pBlock, true);
             }
         }
     }
 
-    function switchHomeDashboardColor(pBlock, isNotHover) {
+    function switchHomeProjectColor(pBlock, isNotHover) {
         let color, isColorLight, opColor;
 
         switch (MODE) {
             case "FPPC":
             case "APPC":
-                color = pBlock.querySelector(".ProjectIcon--project-Icon").style.backgroundColor;
+                color = pBlock.querySelector(".ProjectIcon--project-Icon").style
+                    .backgroundColor;
                 break;
             case "FPSC":
                 color = hexToRgb(fpscConfig.get("custom_color"));
                 break;
             case "MTP": {
                 const keywords = mtConfig.get("keywords");
-                const name = pBlock.querySelector(".HomeProjectItem--fk-Home-Project-Name").innerText.toLowerCase();
+                const name = pBlock
+                .querySelector(".HomeProjectItem--fk-Home-Project-Name")
+                .innerText.toLowerCase();
 
                 for (let key in keywords) {
                     if (isKeyMatch(key, name, "")) {
@@ -404,7 +448,7 @@
             opColor = `${color.substring(0, color.length - 1)}, ${OPACITY})`;
 
             const defaultColor = "rgb(235,237,243)";
-            const isFavorite = isHomeDashboardFavorite(pBlock);
+            const isFavorite = isHomeProjectFavorite(pBlock);
 
             const light = "white";
             const dark = "rgb(0,0,0,0.7)";
@@ -415,7 +459,9 @@
                 pBlock.style.background = opColor;
             }
 
-            const apps = pBlock.querySelectorAll(".HomeProjectItem--fk-HomeProjectItem-App");
+            const apps = pBlock.querySelectorAll(
+                ".HomeProjectItem--fk-HomeProjectItem-App"
+            );
 
             for (let i = 0; i < apps.length; i++) {
                 const appIcon = apps[i].querySelector("svg");
@@ -423,49 +469,51 @@
                 invertColor(appIcon, isColorLight, light, dark, "rgb(160, 166, 199)");
             }
 
-            const dropdownIcon = pBlock.querySelector(".fk-Dropdown-Trigger").querySelector("svg");
+            const dropdownIcon = pBlock
+            .querySelector(".fk-Dropdown-Trigger")
+            .querySelector("svg");
             invertColor(dropdownIcon, isColorLight, light, dark, "inherit");
 
-            const name = pBlock.querySelector(".HomeProjectItem--fk-Home-Project-Name");
+            const name = pBlock.querySelector(
+                ".HomeProjectItem--fk-Home-Project-Name"
+            );
             invertColor(name, isColorLight, light, dark);
 
-            const group = pBlock.querySelector(".HomeProjectItem--fk-Home-Project-Group-Name");
+            const group = pBlock.querySelector(
+                ".HomeProjectItem--fk-Home-Project-Group-Name"
+            );
             invertColor(group, isColorLight, light, dark);
         }
     }
 
-    function isHomeDashboardFavorite(pBlock) {
+    function isHomeProjectFavorite(pBlock) {
         try {
-            return pBlock.querySelector(".tooltip-trigger")
-                .querySelector("i").style.color === "rgb(230, 180, 31)";
-        } catch(e) {
+            return (
+                pBlock.querySelector(".tooltip-trigger").querySelector("i").style
+                .color === "rgb(230, 180, 31)"
+            );
+        } catch (e) {
             return false;
         }
     }
 
     // sidebar
-    let switcherNotOpened = true;
-    const oldProjectSwitcher = document.querySelector(".fc_project_switcher");
-    const newProjectSwitcher = document.querySelector(
-        ".Header--fk-Header-Project"
-    );
-    const isNewUI = typeof react_cache_version !== "undefined";
-
-    if (isNewUI) {
+    if (IS_NEW_UI) {
         window.addEventListener("FC_PROJECT_PICKER_OPENED", () =>
-                                switchSideProjects(isNewUI)
+                                switchSideProjects(IS_NEW_UI)
                                );
     } else {
-        oldProjectSwitcher.onclick = () => switchSideProjects(isNewUI);
+        document.querySelector(".fc_project_switcher").onclick = () =>
+        switchSideProjects(IS_NEW_UI);
     }
 
-    function switchSideProjects(isNewUI) {
+    function switchSideProjects(IS_NEW_UI) {
         const sideProjects = document.querySelectorAll(
             MODE === "FPPC" || MODE === "FPSC"
-            ? isNewUI
+            ? IS_NEW_UI
             ? ".f_favorite"
             : ".f_favorite > .fc_project_item"
-            : isNewUI
+            : IS_NEW_UI
             ? ".ProjectPicker--fk-ProjectPicker-Project"
             : ".fc_project_item"
         );
@@ -473,7 +521,7 @@
         for (let z = 0; z < sideProjects.length; z++) {
             const sideProject = sideProjects[z];
 
-            switchSidebarColor(sideProject, isNewUI);
+            switchSidebarColor(sideProject, IS_NEW_UI);
         }
     }
 
@@ -481,7 +529,8 @@
         let matchBool;
 
         const matchNameBool = name.toLowerCase().indexOf(key.toLowerCase()) !== -1;
-        const matchDescBool = description.toLowerCase().indexOf(key.toLowerCase()) !== -1;
+        const matchDescBool =
+              description.toLowerCase().indexOf(key.toLowerCase()) !== -1;
 
         const matchNameDescBool = matchNameBool || matchDescBool;
 
@@ -496,14 +545,14 @@
         return matchBool;
     }
 
-    function switchSidebarColor(sideProject, isNewUI) {
+    function switchSidebarColor(sideProject, IS_NEW_UI) {
         let color;
 
         switch (MODE) {
             case "APPC":
             case "FPPC":
                 color = sideProject.querySelector(
-                    isNewUI ? ".ProjectPicker--fk-ProjectPicker-ProjectColor" : ".color"
+                    IS_NEW_UI ? ".ProjectPicker--fk-ProjectPicker-ProjectColor" : ".color"
                 ).style.backgroundColor;
                 break;
             case "FPSC":
@@ -514,12 +563,12 @@
 
                 const name = sideProject
                 .querySelector(
-                    isNewUI ? ".ProjectPicker--fk-ProjectPicker-ProjectName" : ".name"
+                    IS_NEW_UI ? ".ProjectPicker--fk-ProjectPicker-ProjectName" : ".name"
                 )
                 .textContent.toLowerCase();
                 const description = sideProject
                 .querySelector(
-                    isNewUI
+                    IS_NEW_UI
                     ? ".ProjectPicker--fk-ProjectPicker-ProjectDescription"
                     : ".fc_description"
                 )
@@ -542,16 +591,16 @@
             const isColorLight = isLight(color);
 
             const name = sideProject.querySelector(
-                isNewUI ? ".ProjectPicker--fk-ProjectPicker-ProjectName" : ".name"
+                IS_NEW_UI ? ".ProjectPicker--fk-ProjectPicker-ProjectName" : ".name"
             );
             const desc = sideProject.querySelector(
-                isNewUI
+                IS_NEW_UI
                 ? ".ProjectPicker--fk-ProjectPicker-ProjectDescription"
                 : ".fc_description"
             );
 
             const fcApps = sideProject.querySelectorAll(
-                isNewUI
+                IS_NEW_UI
                 ? ".ProjectPicker--fk-ProjectPicker-ProjectApplications"
                 : ".fc_app"
             );
@@ -596,7 +645,13 @@
         return hsp > 127.5;
     }
 
-    function invertColor(element, isLight, light = "white", dark = "black", defaultColor) {
+    function invertColor(
+    element,
+     isLight,
+     light = "white",
+     dark = "black",
+     defaultColor
+    ) {
         if (defaultColor) {
             if (element.style.color !== defaultColor) {
                 element.style.color = defaultColor;
